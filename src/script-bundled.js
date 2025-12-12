@@ -705,6 +705,7 @@ async function processUserInput(userInput, forceRefresh = false) {
     // Load user settings for detail level
     const userSettings = await getUserSettings();
     const detailPrompt = getDetailPrompt(userSettings.detailLevel);
+    console.log(`🧭 Detail level active: ${userSettings.detailLevel}`);
 
     // Parse command
     const { command, text } = parseCommand(userInput);
