@@ -44,18 +44,19 @@ FORMATTING RULES:
 CSS ANALYSIS RULES:
 - ONLY report CSS properties that are actually applied and visible in the screenshot
 - Ignore strikethrough/overridden CSS rules
-- Ignore CSS variables that aren't being used
 - When describing an element's appearance, verify it matches what you see in the screenshot
 - If CSS and screenshot don't match, trust the screenshot
+- When mentioning sizes or colors, quote the actual value you see (e.g., "h1 font-size: 20px" or "heading color: #123456") and avoid recommending a change that already meets the guidance
+- If you cannot find a value in the provided CSS or screenshot, say you cannot verify it instead of guessing
 
 KEY PRINCIPLES:
-- Answer the question asked - be direct and concise for simple questions
+- Be direct and concise when asked short, simple questions
 - Prioritize accessibility (WCAG 2.2) and usability when giving design advice
 - Only report what you can verify from the provided HTML, CSS, or screenshot
 - Do not offer code unless specifically requested
 - If information is uncertain or not visible, state the limitation clearly`,
 
-        DESCRIBE: `Provide a spatial visual design description of what's currently visible using the website (base it on the screenshot). Help create a mental map of the layout using directional and positional language. Use terminology familiar to programmers. Be specific but brief.
+        DESCRIBE: `Provide a spatial visual design description of what's currently visible using the screenshot taken. Help create a mental map of the layout using directional and positional language. Use terminology familiar to programmers. Be specific but brief.
 
 IMPORTANT RULES:
 1. You are analyzing a SCREENSHOT of the current viewport - this may show any part of the page (top, middle, bottom, or footer). DO NOT assume this is the "hero section" unless you can clearly see it's the top of the page with the main header/navigation.
@@ -111,6 +112,11 @@ REQUIREMENTS:
 - Cite specific CSS selectors and current values
 - Provide exact recommended values (not generic suggestions)
 
+HALLUCINATION GUARDRAILS:
+- Do not suggest changing a font size, color, or spacing if the current value already meets or exceeds your recommendation
+- Quote the exact value you are basing the suggestion on (e.g., ".hero-title font-size: 20px") before recommending a change
+- If you cannot find a value in the provided CSS or screenshot, explicitly say "value not found" and do not guess
+
 EXAMPLES OF BAD vs GOOD SOLUTIONS:
 BAD: "Use a bolder color" (vague, no actionable code)
 GOOD: "Change .hero-title color from #999999 to #333333 for better contrast"
@@ -153,6 +159,27 @@ function getPromptForCommand(command) {
         default:
             return ''; // No additional prompt - just use SYSTEM
     }
+}
+
+// Detail level prompts for tailoring verbosity
+const DETAIL_PROMPTS = {
+    concise: 'Provide straightforward, brief answers without detailed explanations. Focus on direct, actionable feedback suitable for someone who needs speed.',
+    normal: 'Provide balanced feedback with context and rationale. Explain issues and design suggestions clearly with short reasoning.',
+    comprehensive: 'Provide detailed explanations with learning opportunities about visual design and accessibility best practices. Include the reasoning behind each design suggestion and flagged issue so the user can learn.'
+};
+
+function getDetailPrompt(level) {
+    return DETAIL_PROMPTS[level] || DETAIL_PROMPTS.normal;
+}
+
+async function getUserSettings() {
+    const result = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.USER_SETTINGS);
+    const settings = result[CONFIG.STORAGE_KEYS.USER_SETTINGS] || {};
+    return {
+        detailLevel: settings.detailLevel || 'normal',
+        downloadOption: settings.downloadOption || 'all',
+        contextInstructions: settings.contextInstructions || ''
+    };
 }
 
 // ============================================================================
@@ -494,7 +521,7 @@ async function sendToLLM(userMessage, context, systemPrompt, provider) {
         contextText += `\\n\\nHTML:\\n${context.html.substring(0, 30000)}`;
     }
     if (context.css) {
-        contextText += `\\n\\nCSS:\\n${context.css.substring(0, 15000)}`;
+        contextText += `\\n\\nCSS:\\n${context.css.substring(0, 30000)}`;
     }
 
     const fullMessage = `${userMessage}${contextText}`;
@@ -675,12 +702,16 @@ async function processUserInput(userInput, forceRefresh = false) {
     const result = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.SELECTED_PROVIDER);
     const provider = result[CONFIG.STORAGE_KEYS.SELECTED_PROVIDER] || 'openai';
 
+    // Load user settings for detail level
+    const userSettings = await getUserSettings();
+    const detailPrompt = getDetailPrompt(userSettings.detailLevel);
+
     // Parse command
     const { command, text } = parseCommand(userInput);
     const commandPrompt = command ? getPromptForCommand(command) : '';
-    const systemPrompt = commandPrompt
-        ? `${CONFIG.PROMPTS.SYSTEM}\\n\\n${commandPrompt}`
-        : CONFIG.PROMPTS.SYSTEM;
+    const systemPrompt = [CONFIG.PROMPTS.SYSTEM, detailPrompt, commandPrompt]
+        .filter(Boolean)
+        .join('\n\n');
 
     // Check if we need to capture or use cached context
     let context = {};

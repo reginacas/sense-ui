@@ -186,6 +186,13 @@ const downloadAll = document.getElementById('download-all');
 const downloadFavorites = document.getElementById('download-favorites');
 const contextText = document.getElementById('context-text');
 
+function updateDetailAria() {
+    const radios = [detailComprehensive, detailNormal, detailConcise].filter(Boolean);
+    radios.forEach(radio => {
+        radio.setAttribute('aria-checked', radio.checked ? 'true' : 'false');
+    });
+}
+
 // Function to toggle API key fields based on selected provider
 function toggleApiKeyFields() {
     const selectedProvider = providerOpenAI.checked ? 'openai' : 'gemini';
@@ -267,6 +274,7 @@ async function loadCurrentSettings() {
         } else {
             detailNormal.checked = true;
         }
+        updateDetailAria();
         
         if (settings.downloadOption === 'favorites') {
             downloadFavorites.checked = true;
@@ -373,5 +381,10 @@ clearGeminiBtn.addEventListener('click', handleClearGemini);
 // Add event listeners to provider radio buttons
 providerOpenAI.addEventListener('change', toggleApiKeyFields);
 providerGemini.addEventListener('change', toggleApiKeyFields);
+
+// Keep aria-checked in sync for detail level radios
+[detailComprehensive, detailNormal, detailConcise]
+    .filter(Boolean)
+    .forEach(radio => radio.addEventListener('change', updateDetailAria));
 
 loadCurrentSettings();
