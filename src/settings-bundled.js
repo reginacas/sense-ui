@@ -103,7 +103,9 @@ function getDefaultSettings() {
         downloadOption: 'all',
         contextInstructions: '',
         selectedProvider: 'openai',
-        screenshotMode: 'viewport'
+        screenshotMode: 'viewport',
+        openaiModel: 'auto',
+        geminiModel: 'auto'
     };
 }
 
@@ -114,6 +116,10 @@ async function loadSettings() {
     ]);
     const settings = result[STORAGE_KEYS.USER_SETTINGS] || getDefaultSettings();
     settings.selectedProvider = result[STORAGE_KEYS.SELECTED_PROVIDER] || 'openai';
+
+    // Ensure defaults exist if loading old settings
+    if (!settings.openaiModel) settings.openaiModel = 'auto';
+    if (!settings.geminiModel) settings.geminiModel = 'auto';
 
     const openaiKey = await retrieveApiKey(STORAGE_KEYS.OPENAI_API_KEY);
     const geminiKey = await retrieveApiKey(STORAGE_KEYS.GEMINI_API_KEY);
@@ -178,6 +184,10 @@ async function getApiKeyStatus() {
 const form = document.getElementById('settings-form');
 const providerOpenAI = document.getElementById('provider-openai');
 const providerGemini = document.getElementById('provider-gemini');
+const openaiModelInput = document.getElementById('openai-model');
+const geminiModelInput = document.getElementById('gemini-model');
+const openaiModelContainer = document.getElementById('openai-model-container');
+const geminiModelContainer = document.getElementById('gemini-model-container');
 const openaiKeyInput = document.getElementById('openai-key');
 const geminiKeyInput = document.getElementById('gemini-key');
 const openaiKeyLabel = openaiKeyInput?.previousElementSibling;
@@ -203,6 +213,7 @@ function toggleApiKeyFields() {
         if (openaiKeyLabel) openaiKeyLabel.style.display = '';
         if (openaiKeyInput) openaiKeyInput.style.display = '';
         if (openaiStatus) openaiStatus.style.display = '';
+        if (openaiModelContainer) openaiModelContainer.style.display = '';
         if (clearOpenAIBtn && clearOpenAIBtn.style.display === 'inline-block') {
             clearOpenAIBtn.style.display = 'inline-block';
         }
@@ -210,12 +221,14 @@ function toggleApiKeyFields() {
         if (geminiKeyLabel) geminiKeyLabel.style.display = 'none';
         if (geminiKeyInput) geminiKeyInput.style.display = 'none';
         if (geminiStatus) geminiStatus.style.display = 'none';
+        if (geminiModelContainer) geminiModelContainer.style.display = 'none';
         if (clearGeminiBtn) clearGeminiBtn.style.display = 'none';
     } else {
         // Show Gemini fields
         if (geminiKeyLabel) geminiKeyLabel.style.display = '';
         if (geminiKeyInput) geminiKeyInput.style.display = '';
         if (geminiStatus) geminiStatus.style.display = '';
+        if (geminiModelContainer) geminiModelContainer.style.display = '';
         if (clearGeminiBtn && clearGeminiBtn.style.display === 'inline-block') {
             clearGeminiBtn.style.display = 'inline-block';
         }
@@ -223,6 +236,7 @@ function toggleApiKeyFields() {
         if (openaiKeyLabel) openaiKeyLabel.style.display = 'none';
         if (openaiKeyInput) openaiKeyInput.style.display = 'none';
         if (openaiStatus) openaiStatus.style.display = 'none';
+        if (openaiModelContainer) openaiModelContainer.style.display = 'none';
         if (clearOpenAIBtn) clearOpenAIBtn.style.display = 'none';
     }
 }
@@ -286,6 +300,10 @@ async function loadCurrentSettings() {
             contextText.value = settings.contextInstructions;
         }
 
+        // Load Model Preferences
+        if (openaiModelInput) openaiModelInput.value = settings.openaiModel;
+        if (geminiModelInput) geminiModelInput.value = settings.geminiModel;
+
         // Set the screenshot mode radio button
         const screenshotViewport = document.getElementById('screenshot-viewport');
         const screenshotFullpage = document.getElementById('screenshot-fullpage');
@@ -332,6 +350,12 @@ async function handleSubmit(event) {
 
         settings.contextInstructions = formData.get('context') || '';
         settings.selectedProvider = formData.get('provider') || 'openai';
+
+        // Save simple string values for models
+        const openaiModelVal = formData.get('openaiModel');
+        const geminiModelVal = formData.get('geminiModel');
+        settings.openaiModel = openaiModelVal ? openaiModelVal.trim() : 'auto';
+        settings.geminiModel = geminiModelVal ? geminiModelVal.trim() : 'auto';
 
         const openaiKey = openaiKeyInput.value.trim();
         const geminiKey = geminiKeyInput.value.trim();

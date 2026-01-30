@@ -58,6 +58,31 @@
                         Google Gemini
                     </label>
                     <br>
+
+                    <!-- OpenAI Model Input -->
+                    <div id="openai-model-container">
+                        <label for="openai-model">OpenAI Model</label>
+                        <input type="text" id="openai-model" name="openaiModel" list="openai-models" placeholder="auto (default)" style="width: 100%; margin-bottom: 0.5em;">
+                        <datalist id="openai-models">
+                            <option value="auto">Auto (Cheapest/Fastest)</option>
+                            <option value="gpt-4o"></option>
+                            <option value="gpt-4o-mini"></option>
+                            <option value="gpt-4-turbo"></option>
+                        </datalist>
+                    </div>
+
+                    <!-- Gemini Model Input -->
+                    <div id="gemini-model-container" style="display: none;">
+                        <label for="gemini-model">Gemini Model</label>
+                        <input type="text" id="gemini-model" name="geminiModel" list="gemini-models" placeholder="auto (default)" style="width: 100%; margin-bottom: 0.5em;">
+                        <datalist id="gemini-models">
+                            <option value="auto">Auto (Cheapest/Fastest)</option>
+                            <option value="gemini-1.5-pro"></option>
+                            <option value="gemini-1.5-flash"></option>
+                            <option value="gemini-2.0-flash-exp"></option>
+                        </datalist>
+                    </div>
+
                     <!--OpenAI key input-->
                     <label for="openai-key">Enter your OpenAI key</label>
                     <input type="password" id="openai-key" name="openaiApiKey" placeholder="Your OpenAI API key"
