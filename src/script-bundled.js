@@ -19,7 +19,7 @@ const CONFIG = {
             ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models',
             // Using gemini-flash-latest - automatically points to the latest stable Flash model
             // This alias is updated by Google when new versions are released (with 2 weeks notice)
-            MODEL: 'gemini-flash-latest',
+            MODEL: 'gemini-3-flash-preview',
             MAX_TOKENS: 4000,
             TEMPERATURE: 0.4
         }
