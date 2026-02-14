@@ -100,7 +100,6 @@ function validateApiKeyFormat(apiKey, provider) {
 function getDefaultSettings() {
     return {
         detailLevel: 'normal',
-        downloadOption: 'all',
         contextInstructions: '',
         selectedProvider: 'openai',
         screenshotMode: 'viewport',
@@ -197,8 +196,6 @@ const geminiStatus = document.getElementById('gemini-status');
 const detailComprehensive = document.getElementById('detail-comprehensive');
 const detailNormal = document.getElementById('detail-normal');
 const detailConcise = document.getElementById('detail-concise');
-const downloadAll = document.getElementById('download-all');
-const downloadFavorites = document.getElementById('download-favorites');
 const showButtonsCheckbox = document.getElementById('show-buttons');
 const contextText = document.getElementById('context-text');
 const openaiModelInput = document.getElementById('openai-model');
@@ -323,12 +320,6 @@ async function loadCurrentSettings() {
             detailNormal.checked = true;
         }
 
-        if (settings.downloadOption === 'favorites') {
-            downloadFavorites.checked = true;
-        } else {
-            downloadAll.checked = true;
-        }
-
         if (settings.contextInstructions) {
             contextText.value = settings.contextInstructions;
         }
@@ -384,9 +375,6 @@ async function handleSubmit(event) {
 
         const detailLevel = formData.get('detail');
         if (detailLevel) settings.detailLevel = detailLevel;
-
-        const downloadOption = formData.get('download');
-        if (downloadOption) settings.downloadOption = downloadOption;
 
         const screenshotMode = formData.get('screenshot');
         if (screenshotMode) settings.screenshotMode = screenshotMode;
