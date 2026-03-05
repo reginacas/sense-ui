@@ -4,6 +4,10 @@ on:
     pull_request:
         branches: [main]
 
+concurrency:
+    group: lint-${{ github.head_ref }}
+    cancel-in-progress: true
+
 jobs:
     lint:
         name: Lint & Format Check
