@@ -26,13 +26,39 @@ Please take a moment to read the project values first.
 
 7. To open it, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> (or <kbd>Command</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> on Mac)
 
+## Code Formatting
+
+This project uses [Prettier](https://prettier.io/) to enforce consistent code style. The configuration lives in `prettier.config.js` and applies the following rules:
+
+- `trailingComma`: `all`
+- `tabWidth`: `4`
+- `useTabs`: `false`
+- `singleQuote`: `true`
+- `semi`: `true`
+- `endOfLine`: `lf`
+
+**Format all files:**
+
+```bash
+npm run format
+```
+
+**Check formatting without writing changes:**
+
+```bash
+npx prettier --check .
+```
+
+Formatting is also enforced automatically on staged `*.{js,css,md}` files before each commit via [lint-staged](https://github.com/lint-staged/lint-staged) and [Husky](https://typicode.github.io/husky/). Make sure to run `npm install` after cloning so the Git hooks are set up correctly.
+
 ## Pull Request Guidelines
 
 1. Create a feature branch from `main`
 2. Follow accessibility standards: All code must be WCAG 2.2 AA compliant
 3. Write semantic HTML with proper ARIA labels
-4. Document your changes in the PR description
-5. Reference related issues (e.g., "Fixes #42")
+4. Ensure your code is formatted with Prettier before opening a PR (`npm run format`)
+5. Document your changes in the PR description
+6. Reference related issues (e.g., "Fixes #42")
 
 ## Communication Channels
 
