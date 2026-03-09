@@ -1,20 +1,24 @@
 /**
- * Background service worker for SenseUI
- * Handles extension lifecycle events including first-time installation
+ * Service Worker (Background Script) for SenseUI
  */
 
-// Listen for extension installation or update
-chrome.runtime.onInstalled.addListener((details) => {
-    if (details.reason === 'install') {
-        // First-time installation - set flag to show welcome page in popup
-        chrome.storage.local.set({ senseui_first_time: true });
-    } else if (details.reason === 'update') {
-        // Extension was updated
-        console.log(
-            'SenseUI updated to version',
-            chrome.runtime.getManifest().version,
-        );
-        // Optionally open a "What's new" page:
-        // chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') });
+// Keep the default browser action free to open the standard popup defined in manifest.json
+
+// Listen for keyboard commands, primarily the custom close shortcut
+chrome.commands.onCommand.addListener((command) => {
+    if (command === 'open_side_panel') {
+        // Query the active tab to get the current window ID and open the panel there
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs && tabs.length > 0) {
+                chrome.sidePanel
+                    .open({ windowId: tabs[0].windowId })
+                    .catch(console.error);
+            }
+        });
+    } else if (command === 'close_side_panel') {
+        // Send a message to the active views to close themselves
+        chrome.runtime.sendMessage({ action: 'close_side_panel' }).catch(() => {
+            // It's possible the panel is not open, ignore errors here
+        });
     }
 });

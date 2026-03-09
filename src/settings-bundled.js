@@ -120,11 +120,13 @@ function validateApiKeyFormat(apiKey, provider) {
 // ============================================================================
 function getDefaultSettings() {
     return {
+        detailLevel: 'normal',
+        downloadOption: 'all',
         contextInstructions: '',
         selectedProvider: 'openai',
-        screenshotMode: 'fullpage',
-        openaiModel: '',
-        geminiModel: '',
+        screenshotMode: 'viewport',
+        openaiModel: 'auto (gpt-4o-mini)',
+        geminiModel: 'auto (gemini-3-flash-preview)',
         showButtons: false,
     };
 }
@@ -139,10 +141,9 @@ async function loadSettings() {
         result[STORAGE_KEYS.SELECTED_PROVIDER] || 'openai';
 
     // Backfill defaults for newly added settings
-    if (settings.openaiModel === undefined) settings.openaiModel = '';
-    if (settings.geminiModel === undefined) settings.geminiModel = '';
-    if (settings.screenshotMode === undefined)
-        settings.screenshotMode = 'fullpage';
+    if (!settings.openaiModel) settings.openaiModel = 'auto (gpt-4o-mini)';
+    if (!settings.geminiModel)
+        settings.geminiModel = 'auto (gemini-3-flash-preview)';
 
     const openaiKey = await retrieveApiKey(STORAGE_KEYS.OPENAI_API_KEY);
     const geminiKey = await retrieveApiKey(STORAGE_KEYS.GEMINI_API_KEY);
@@ -232,6 +233,11 @@ const clearGeminiBtn = document.getElementById('clear-gemini-key');
 const statusDiv = document.getElementById('settings-status');
 const openaiStatus = document.getElementById('openai-status');
 const geminiStatus = document.getElementById('gemini-status');
+const detailComprehensive = document.getElementById('detail-comprehensive');
+const detailNormal = document.getElementById('detail-normal');
+const detailConcise = document.getElementById('detail-concise');
+const downloadAll = document.getElementById('download-all');
+const downloadFavorites = document.getElementById('download-favorites');
 const showButtonsCheckbox = document.getElementById('show-buttons');
 const contextText = document.getElementById('context-text');
 const openaiModelInput = document.getElementById('openai-model');
@@ -239,9 +245,6 @@ const geminiModelInput = document.getElementById('gemini-model');
 const openaiModelLabel = document.getElementById('openai-model-label');
 const geminiModelLabel = document.getElementById('gemini-model-label');
 const geminiModelDesc = document.getElementById('gemini-model-desc');
-const geminiCombobox = document.getElementById('gemini-combobox');
-const modelSection = document.getElementById('model-customization-section');
-const aiKeyInstructions = document.getElementById('ai-key-instructions');
 
 let hasOpenAIKeyConfigured = false;
 let hasGeminiKeyConfigured = false;
@@ -257,37 +260,19 @@ function updateModelFieldsVisibility() {
         hasGeminiKeyConfigured ||
         (geminiKeyInput && geminiKeyInput.value.trim() !== '');
 
-    // Get the OpenAI combobox container
-    const openaiCombobox = openaiModelInput.closest('.combobox');
-
-    // Show or hide the entire model section
-    const shouldShowSection =
-        (selectedProvider === 'openai' && hasOpenAI) ||
-        (selectedProvider === 'gemini' && hasGemini);
-    if (modelSection) {
-        modelSection.style.display = shouldShowSection ? '' : 'none';
-    }
-
-    // Hide API key instructions if any key is configured
-    const hasAnyKey = hasOpenAI || hasGemini;
-    if (aiKeyInstructions) {
-        aiKeyInstructions.style.display = hasAnyKey ? 'none' : '';
-    }
-
-    // Hide provider-specific fields by default
+    // Hide everything by default
     if (openaiModelLabel) openaiModelLabel.style.display = 'none';
-    if (openaiCombobox) openaiCombobox.style.display = 'none';
+    openaiModelInput.style.display = 'none';
     if (geminiModelLabel) geminiModelLabel.style.display = 'none';
-    if (geminiCombobox) geminiCombobox.style.display = 'none';
+    geminiModelInput.style.display = 'none';
     if (geminiModelDesc) geminiModelDesc.style.display = 'none';
 
-    // Show the appropriate provider's fields
     if (selectedProvider === 'openai' && hasOpenAI) {
         if (openaiModelLabel) openaiModelLabel.style.display = '';
-        if (openaiCombobox) openaiCombobox.style.display = '';
+        openaiModelInput.style.display = '';
     } else if (selectedProvider === 'gemini' && hasGemini) {
         if (geminiModelLabel) geminiModelLabel.style.display = '';
-        if (geminiCombobox) geminiCombobox.style.display = '';
+        geminiModelInput.style.display = '';
         if (geminiModelDesc) geminiModelDesc.style.display = '';
     }
 }
@@ -373,16 +358,32 @@ async function loadCurrentSettings() {
     try {
         const settings = await loadSettings();
 
+        if (settings.detailLevel === 'comprehensive') {
+            detailComprehensive.checked = true;
+        } else if (settings.detailLevel === 'concise') {
+            detailConcise.checked = true;
+        } else {
+            detailNormal.checked = true;
+        }
+
+        if (settings.downloadOption === 'favorites') {
+            downloadFavorites.checked = true;
+        } else {
+            downloadAll.checked = true;
+        }
+
         if (settings.contextInstructions) {
             contextText.value = settings.contextInstructions;
         }
 
         // Set the model inputs
         if (openaiModelInput) {
-            openaiModelInput.value = settings.openaiModel || '';
+            openaiModelInput.value =
+                settings.openaiModel || 'auto (gpt-4o-mini)';
         }
         if (geminiModelInput) {
-            geminiModelInput.value = settings.geminiModel || '';
+            geminiModelInput.value =
+                settings.geminiModel || 'auto (gemini-3-flash-preview)';
         }
 
         // Set the screenshot mode radio button
@@ -392,12 +393,12 @@ async function loadCurrentSettings() {
         const screenshotFullpage = document.getElementById(
             'screenshot-fullpage',
         );
-        if (settings.screenshotMode === 'viewport') {
-            screenshotViewport.checked = true;
-            screenshotFullpage.checked = false;
-        } else {
+        if (settings.screenshotMode === 'fullpage') {
             screenshotFullpage.checked = true;
             screenshotViewport.checked = false;
+        } else {
+            screenshotViewport.checked = true;
+            screenshotFullpage.checked = false;
         }
 
         // Set the show buttons checkbox
@@ -430,12 +431,17 @@ async function handleSubmit(event) {
         const formData = new FormData(form);
         const settings = {};
 
-        settings.screenshotMode = formData.get('screenshot') || 'fullpage';
+        const detailLevel = formData.get('detail');
+        if (detailLevel) settings.detailLevel = detailLevel;
+
+        const downloadOption = formData.get('download');
+        if (downloadOption) settings.downloadOption = downloadOption;
+
+        const screenshotMode = formData.get('screenshot');
+        if (screenshotMode) settings.screenshotMode = screenshotMode;
 
         settings.contextInstructions = formData.get('context') || '';
-        settings.selectedProvider = providerGemini?.checked
-            ? 'gemini'
-            : 'openai';
+        settings.selectedProvider = formData.get('provider') || 'openai';
         settings.showButtons = formData.get('showButtons') === 'on';
 
         // Model selections (optional strings; treated as-is at runtime)
@@ -471,10 +477,12 @@ async function handleSubmit(event) {
         await updateApiKeyStatus();
         showStatus('Settings saved successfully!');
 
-        // Navigate back to chat page and focus on input
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 500); // Small delay to show success message
+        // Navigate back to chat page and focus on input ONLY if requested by the specific button
+        if (event.submitter && event.submitter.id === 'save-settings-return') {
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500); // Small delay to show success message
+        }
     } catch (error) {
         console.error('Error saving settings:', error);
         showStatus(`Failed to save settings: ${error.message}`, true);
@@ -508,6 +516,17 @@ async function handleClearGemini() {
 }
 
 form.addEventListener('submit', handleSubmit);
+
+const saveReturnBtn = document.getElementById('save-settings-return');
+if (saveReturnBtn) {
+    saveReturnBtn.addEventListener('click', (e) => {
+        // Construct a superficial submit event that triggers handleSubmit with the submitter specified
+        const event = new Event('submit', { cancelable: true });
+        event.submitter = saveReturnBtn;
+        form.dispatchEvent(event);
+    });
+}
+
 clearOpenAIBtn.addEventListener('click', handleClearOpenAI);
 clearGeminiBtn.addEventListener('click', handleClearGemini);
 
@@ -562,628 +581,6 @@ if (resetBtn && resetDialog) {
             resetDialog.close();
         });
     }
-}
-
-// ============================================================================
-// COMBOBOX AUTOCOMPLETE COMPONENT
-// ============================================================================
-
-/**
- * ComboboxAutocomplete - ARIA-compliant autocomplete combobox
- * Based on W3C ARIA Authoring Practices Guide
- */
-class ComboboxAutocomplete {
-    constructor(comboboxNode, buttonNode, listboxNode) {
-        this.comboboxNode = comboboxNode;
-        this.buttonNode = buttonNode;
-        this.listboxNode = listboxNode;
-
-        this.comboboxHasVisualFocus = false;
-        this.listboxHasVisualFocus = false;
-
-        this.hasHover = false;
-
-        this.isNone = false;
-        this.isList = false;
-        this.isBoth = false;
-
-        this.allOptions = [];
-
-        this.option = null;
-        this.firstOption = null;
-        this.lastOption = null;
-
-        this.filteredOptions = [];
-        this.filter = '';
-
-        var autocomplete = this.comboboxNode.getAttribute('aria-autocomplete');
-
-        if (typeof autocomplete === 'string') {
-            autocomplete = autocomplete.toLowerCase();
-            this.isNone = autocomplete === 'none';
-            this.isList = autocomplete === 'list';
-            this.isBoth = autocomplete === 'both';
-        } else {
-            // default value of autocomplete
-            this.isNone = true;
-        }
-
-        this.comboboxNode.addEventListener(
-            'keydown',
-            this.onComboboxKeyDown.bind(this),
-        );
-        this.comboboxNode.addEventListener(
-            'keyup',
-            this.onComboboxKeyUp.bind(this),
-        );
-        this.comboboxNode.addEventListener(
-            'click',
-            this.onComboboxClick.bind(this),
-        );
-        this.comboboxNode.addEventListener(
-            'focus',
-            this.onComboboxFocus.bind(this),
-        );
-        this.comboboxNode.addEventListener(
-            'blur',
-            this.onComboboxBlur.bind(this),
-        );
-
-        document.body.addEventListener(
-            'pointerup',
-            this.onBackgroundPointerUp.bind(this),
-            true,
-        );
-
-        // initialize pop up menu
-
-        this.listboxNode.addEventListener(
-            'pointerover',
-            this.onListboxPointerover.bind(this),
-        );
-        this.listboxNode.addEventListener(
-            'pointerout',
-            this.onListboxPointerout.bind(this),
-        );
-
-        // Traverse the element children of domNode: configure each with
-        // option role behavior and store reference in.options array.
-        var nodes = this.listboxNode.getElementsByTagName('LI');
-
-        for (var i = 0; i < nodes.length; i++) {
-            var node = nodes[i];
-            this.allOptions.push(node);
-
-            node.addEventListener('click', this.onOptionClick.bind(this));
-            node.addEventListener(
-                'pointerover',
-                this.onOptionPointerover.bind(this),
-            );
-            node.addEventListener(
-                'pointerout',
-                this.onOptionPointerout.bind(this),
-            );
-        }
-
-        this.filterOptions();
-
-        // Open Button
-        if (this.buttonNode) {
-            this.buttonNode.addEventListener(
-                'click',
-                this.onButtonClick.bind(this),
-            );
-        }
-    }
-
-    getLowercaseContent(node) {
-        return node.textContent.toLowerCase();
-    }
-
-    isOptionInView(option) {
-        var bounding = option.getBoundingClientRect();
-        return (
-            bounding.top >= 0 &&
-            bounding.left >= 0 &&
-            bounding.bottom <=
-                (window.innerHeight || document.documentElement.clientHeight) &&
-            bounding.right <=
-                (window.innerWidth || document.documentElement.clientWidth)
-        );
-    }
-
-    setActiveDescendant(option) {
-        if (option && this.listboxHasVisualFocus) {
-            this.comboboxNode.setAttribute('aria-activedescendant', option.id);
-            if (!this.isOptionInView(option)) {
-                option.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        } else {
-            this.comboboxNode.setAttribute('aria-activedescendant', '');
-        }
-    }
-
-    setValue(value) {
-        this.filter = value;
-        this.comboboxNode.value = this.filter;
-        this.comboboxNode.setSelectionRange(
-            this.filter.length,
-            this.filter.length,
-        );
-        this.filterOptions();
-    }
-
-    setOption(option, flag) {
-        if (typeof flag !== 'boolean') {
-            flag = false;
-        }
-
-        if (option) {
-            this.option = option;
-            this.setCurrentOptionStyle(this.option);
-            this.setActiveDescendant(this.option);
-
-            if (this.isBoth) {
-                this.comboboxNode.value = this.option.textContent;
-                if (flag) {
-                    this.comboboxNode.setSelectionRange(
-                        this.option.textContent.length,
-                        this.option.textContent.length,
-                    );
-                } else {
-                    this.comboboxNode.setSelectionRange(
-                        this.filter.length,
-                        this.option.textContent.length,
-                    );
-                }
-            }
-        }
-    }
-
-    setVisualFocusCombobox() {
-        this.listboxNode.classList.remove('focus');
-        this.comboboxNode.parentNode.classList.add('focus');
-        this.comboboxHasVisualFocus = true;
-        this.listboxHasVisualFocus = false;
-        this.setActiveDescendant(false);
-    }
-
-    setVisualFocusListbox() {
-        this.comboboxNode.parentNode.classList.remove('focus');
-        this.comboboxHasVisualFocus = false;
-        this.listboxHasVisualFocus = true;
-        this.listboxNode.classList.add('focus');
-        this.setActiveDescendant(this.option);
-    }
-
-    removeVisualFocusAll() {
-        this.comboboxNode.parentNode.classList.remove('focus');
-        this.comboboxHasVisualFocus = false;
-        this.listboxHasVisualFocus = false;
-        this.listboxNode.classList.remove('focus');
-        this.option = null;
-        this.setActiveDescendant(false);
-    }
-
-    filterOptions() {
-        // do not filter any options if autocomplete is none
-        if (this.isNone) {
-            this.filter = '';
-        }
-
-        var option = null;
-        var currentOption = this.option;
-        var filter = this.filter.toLowerCase();
-
-        this.filteredOptions = [];
-        this.listboxNode.innerHTML = '';
-
-        for (var i = 0; i < this.allOptions.length; i++) {
-            option = this.allOptions[i];
-            if (
-                filter.length === 0 ||
-                this.getLowercaseContent(option).indexOf(filter) === 0
-            ) {
-                this.filteredOptions.push(option);
-                this.listboxNode.appendChild(option);
-            }
-        }
-
-        // Use populated options array to initialize firstOption and lastOption.
-        var numItems = this.filteredOptions.length;
-        if (numItems > 0) {
-            this.firstOption = this.filteredOptions[0];
-            this.lastOption = this.filteredOptions[numItems - 1];
-
-            if (
-                currentOption &&
-                this.filteredOptions.indexOf(currentOption) >= 0
-            ) {
-                option = currentOption;
-            } else {
-                option = this.firstOption;
-            }
-        } else {
-            this.firstOption = null;
-            option = null;
-            this.lastOption = null;
-        }
-
-        return option;
-    }
-
-    setCurrentOptionStyle(option) {
-        for (var i = 0; i < this.filteredOptions.length; i++) {
-            var opt = this.filteredOptions[i];
-            if (opt === option) {
-                opt.setAttribute('aria-selected', 'true');
-                if (
-                    this.listboxNode.scrollTop + this.listboxNode.offsetHeight <
-                    opt.offsetTop + opt.offsetHeight
-                ) {
-                    this.listboxNode.scrollTop =
-                        opt.offsetTop +
-                        opt.offsetHeight -
-                        this.listboxNode.offsetHeight;
-                } else if (this.listboxNode.scrollTop > opt.offsetTop + 2) {
-                    this.listboxNode.scrollTop = opt.offsetTop;
-                }
-            } else {
-                opt.removeAttribute('aria-selected');
-            }
-        }
-    }
-
-    getPreviousOption(currentOption) {
-        if (currentOption !== this.firstOption) {
-            var index = this.filteredOptions.indexOf(currentOption);
-            return this.filteredOptions[index - 1];
-        }
-        return this.lastOption;
-    }
-
-    getNextOption(currentOption) {
-        if (currentOption !== this.lastOption) {
-            var index = this.filteredOptions.indexOf(currentOption);
-            return this.filteredOptions[index + 1];
-        }
-        return this.firstOption;
-    }
-
-    /* MENU DISPLAY METHODS */
-
-    doesOptionHaveFocus() {
-        return this.comboboxNode.getAttribute('aria-activedescendant') !== '';
-    }
-
-    isOpen() {
-        return this.listboxNode.style.display === 'block';
-    }
-
-    isClosed() {
-        return this.listboxNode.style.display !== 'block';
-    }
-
-    hasOptions() {
-        return this.filteredOptions.length;
-    }
-
-    open() {
-        this.listboxNode.style.display = 'block';
-        this.comboboxNode.setAttribute('aria-expanded', 'true');
-        this.buttonNode.setAttribute('aria-expanded', 'true');
-    }
-
-    close(force) {
-        if (typeof force !== 'boolean') {
-            force = false;
-        }
-
-        if (
-            force ||
-            (!this.comboboxHasVisualFocus &&
-                !this.listboxHasVisualFocus &&
-                !this.hasHover)
-        ) {
-            this.setCurrentOptionStyle(false);
-            this.listboxNode.style.display = 'none';
-            this.comboboxNode.setAttribute('aria-expanded', 'false');
-            this.buttonNode.setAttribute('aria-expanded', 'false');
-            this.setActiveDescendant(false);
-            this.comboboxNode.parentNode.classList.add('focus');
-        }
-    }
-
-    /* combobox Events */
-
-    onComboboxKeyDown(event) {
-        var flag = false,
-            altKey = event.altKey;
-
-        if (event.ctrlKey || event.shiftKey) {
-            return;
-        }
-
-        switch (event.key) {
-            case 'Enter':
-                if (this.listboxHasVisualFocus) {
-                    this.setValue(this.option.textContent);
-                }
-                this.close(true);
-                this.setVisualFocusCombobox();
-                flag = true;
-                break;
-
-            case 'Down':
-            case 'ArrowDown':
-                if (this.filteredOptions.length > 0) {
-                    if (altKey) {
-                        this.open();
-                    } else {
-                        this.open();
-                        if (
-                            this.listboxHasVisualFocus ||
-                            (this.isBoth && this.filteredOptions.length > 1)
-                        ) {
-                            this.setOption(
-                                this.getNextOption(this.option),
-                                true,
-                            );
-                            this.setVisualFocusListbox();
-                        } else {
-                            this.setOption(this.firstOption, true);
-                            this.setVisualFocusListbox();
-                        }
-                    }
-                }
-                flag = true;
-                break;
-
-            case 'Up':
-            case 'ArrowUp':
-                if (this.hasOptions()) {
-                    if (this.listboxHasVisualFocus) {
-                        this.setOption(
-                            this.getPreviousOption(this.option),
-                            true,
-                        );
-                    } else {
-                        this.open();
-                        if (!altKey) {
-                            this.setOption(this.lastOption, true);
-                            this.setVisualFocusListbox();
-                        }
-                    }
-                }
-                flag = true;
-                break;
-
-            case 'Esc':
-            case 'Escape':
-                if (this.isOpen()) {
-                    this.close(true);
-                    this.filter = this.comboboxNode.value;
-                    this.filterOptions();
-                    this.setVisualFocusCombobox();
-                } else {
-                    this.setValue('');
-                    this.comboboxNode.value = '';
-                }
-                this.option = null;
-                flag = true;
-                break;
-
-            case 'Tab':
-                this.close(true);
-                if (this.listboxHasVisualFocus) {
-                    if (this.option) {
-                        this.setValue(this.option.textContent);
-                    }
-                }
-                break;
-
-            case 'Home':
-                this.comboboxNode.setSelectionRange(0, 0);
-                flag = true;
-                break;
-
-            case 'End':
-                var length = this.comboboxNode.value.length;
-                this.comboboxNode.setSelectionRange(length, length);
-                flag = true;
-                break;
-
-            default:
-                break;
-        }
-
-        if (flag) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-    }
-
-    isPrintableCharacter(str) {
-        return str.length === 1 && str.match(/\S| /);
-    }
-
-    onComboboxKeyUp(event) {
-        var flag = false,
-            option = null,
-            char = event.key;
-
-        if (this.isPrintableCharacter(char)) {
-            this.filter += char;
-        }
-
-        // this is for the case when a selection in the textbox has been deleted
-        if (this.comboboxNode.value.length < this.filter.length) {
-            this.filter = this.comboboxNode.value;
-            this.option = null;
-            this.filterOptions();
-        }
-
-        if (event.key === 'Escape' || event.key === 'Esc') {
-            return;
-        }
-
-        switch (event.key) {
-            case 'Backspace':
-                this.setVisualFocusCombobox();
-                this.setCurrentOptionStyle(false);
-                this.filter = this.comboboxNode.value;
-                this.option = null;
-                this.filterOptions();
-                flag = true;
-                break;
-
-            case 'Left':
-            case 'ArrowLeft':
-            case 'Right':
-            case 'ArrowRight':
-            case 'Home':
-            case 'End':
-                if (this.isBoth) {
-                    this.filter = this.comboboxNode.value;
-                } else {
-                    this.option = null;
-                    this.setCurrentOptionStyle(false);
-                }
-                this.setVisualFocusCombobox();
-                flag = true;
-                break;
-
-            default:
-                if (this.isPrintableCharacter(char)) {
-                    this.setVisualFocusCombobox();
-                    this.setCurrentOptionStyle(false);
-                    flag = true;
-
-                    if (this.isList || this.isBoth) {
-                        option = this.filterOptions();
-                        if (option) {
-                            if (
-                                this.isClosed() &&
-                                this.comboboxNode.value.length
-                            ) {
-                                this.open();
-                            }
-
-                            if (
-                                this.getLowercaseContent(option).indexOf(
-                                    this.comboboxNode.value.toLowerCase(),
-                                ) === 0
-                            ) {
-                                this.option = option;
-                                if (this.isBoth || this.listboxHasVisualFocus) {
-                                    this.setCurrentOptionStyle(option);
-                                    if (this.isBoth) {
-                                        this.setOption(option);
-                                    }
-                                }
-                            } else {
-                                this.option = null;
-                                this.setCurrentOptionStyle(false);
-                            }
-                        } else {
-                            this.close();
-                            this.option = null;
-                            this.setActiveDescendant(false);
-                        }
-                    } else if (this.comboboxNode.value.length) {
-                        this.open();
-                    }
-                }
-
-                break;
-        }
-
-        if (flag) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-    }
-
-    onComboboxClick() {
-        if (this.isOpen()) {
-            this.close(true);
-        } else {
-            this.open();
-        }
-    }
-
-    onComboboxFocus() {
-        this.filter = this.comboboxNode.value;
-        this.filterOptions();
-        this.setVisualFocusCombobox();
-        this.option = null;
-        this.setCurrentOptionStyle(null);
-    }
-
-    onComboboxBlur() {
-        this.removeVisualFocusAll();
-    }
-
-    onBackgroundPointerUp(event) {
-        if (
-            !this.comboboxNode.contains(event.target) &&
-            !this.listboxNode.contains(event.target) &&
-            !this.buttonNode.contains(event.target)
-        ) {
-            this.comboboxHasVisualFocus = false;
-            this.setCurrentOptionStyle(null);
-            this.removeVisualFocusAll();
-            setTimeout(this.close.bind(this, true), 300);
-        }
-    }
-
-    onButtonClick() {
-        if (this.isOpen()) {
-            this.close(true);
-        } else {
-            this.open();
-        }
-        this.comboboxNode.focus();
-        this.setVisualFocusCombobox();
-    }
-
-    /* Listbox Events */
-
-    onListboxPointerover() {
-        this.hasHover = true;
-    }
-
-    onListboxPointerout() {
-        this.hasHover = false;
-        setTimeout(this.close.bind(this, false), 300);
-    }
-
-    // Listbox Option Events
-
-    onOptionClick(event) {
-        this.comboboxNode.value = event.target.textContent;
-        this.close(true);
-    }
-
-    onOptionPointerover() {
-        this.hasHover = true;
-        this.open();
-    }
-
-    onOptionPointerout() {
-        this.hasHover = false;
-        setTimeout(this.close.bind(this, false), 300);
-    }
-}
-
-// Initialize combobox components
-var comboboxes = document.querySelectorAll('.combobox-list');
-for (var i = 0; i < comboboxes.length; i++) {
-    var combobox = comboboxes[i];
-    var comboboxNode = combobox.querySelector('input');
-    var buttonNode = combobox.querySelector('button');
-    var listboxNode = combobox.querySelector('[role="listbox"]');
-    new ComboboxAutocomplete(comboboxNode, buttonNode, listboxNode);
 }
 
 loadCurrentSettings();

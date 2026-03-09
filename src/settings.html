@@ -27,16 +27,44 @@
             <h1>Settings</h1>
             <form id="settings-form" novalidate>
                 <!-- API Configuration Section -->
-                <details name="settings" class="settings-section">
+                <details name="settings" class="settings-section" open>
                     <summary>
-                        <h2>Enter your API Key</h2>
+                        <h2>Enter your AI Key</h2>
                     </summary>
                     <fieldset id="api-fieldset" aria-labelledby="api-legend">
                         <legend id="api-legend">
-                            Enter your API key to use SenseUI
+                            Enter your AI key to use SenseUI
                         </legend>
-                        <!-- API key provider selection -->
-                        <h3>Select your API key provider</h3>
+                        <!-- AI key instructions -->
+                        <h3>How to get an AI key</h3>
+                        <p>
+                            If you don't have a key yet, you can visit these
+                            links (opens in a new tab). If you already have one,
+                            continue to the next step.
+                        </p>
+                        <ul>
+                            <li>
+                                <a
+                                    href="https://platform.openai.com/api-keys"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    Get your OpenAI API key
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="https://aistudio.google.com/app/apikey"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >Get your Google Gemini API key</a
+                                >
+                            </li>
+                        </ul>
+                        <br />
+                        <!-- AI key provider selection -->
+                        <h3>Select your AI key provider</h3>
+                        <br />
                         <label for="provider-openai">
                             <input
                                 id="provider-openai"
@@ -116,184 +144,79 @@
                         <br />
 
                         <!-- Model selection (provider-specific) -->
-                        <div
-                            id="model-customization-section"
-                            style="display: none"
-                        >
-                            <h3>Model customization</h3>
-                            <p>
-                                Choose a model from the list or type a custom
-                                name. When in doubt, use auto.
-                            </p>
-                            <!-- OpenAI model input -->
-                            <label for="openai-model" id="openai-model-label"
-                                >OpenAI model</label
+                        <h3>Model customization</h3>
+                        <p>
+                            If you wish to specify, choose which model SenseUI
+                            should use for this provider. If you are not sure,
+                            keep the auto option. To read more about model
+                            requirements, visit the
+                            <a
+                                href="help.html#available-models"
+                                target="_blank"
+                                rel="noopener"
+                                >Help page</a
                             >
-                            <div class="combobox combobox-list">
-                                <div class="group">
-                                    <input
-                                        id="openai-model"
-                                        name="openaiModel"
-                                        class="cb_edit"
-                                        type="text"
-                                        role="combobox"
-                                        aria-autocomplete="list"
-                                        aria-expanded="false"
-                                        aria-controls="openai-listbox"
-                                        aria-describedby="openai-model-desc"
-                                        autocomplete="off"
-                                    />
-                                    <button
-                                        id="openai-model-button"
-                                        type="button"
-                                        tabindex="-1"
-                                        aria-label="OpenAI models"
-                                        aria-expanded="false"
-                                        aria-controls="openai-listbox"
-                                    >
-                                        <svg
-                                            width="18"
-                                            height="16"
-                                            aria-hidden="true"
-                                            focusable="false"
-                                            style="forced-color-adjust: auto"
-                                        >
-                                            <polygon
-                                                class="arrow"
-                                                stroke-width="0"
-                                                fill-opacity="0.75"
-                                                fill="currentcolor"
-                                                points="3,6 15,6 9,14"
-                                            ></polygon>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <ul
-                                    id="openai-listbox"
-                                    role="listbox"
-                                    aria-label="OpenAI models"
-                                >
-                                    <li id="openai-auto" role="option">
-                                        auto (gpt-4o-mini)
-                                    </li>
-                                    <li id="openai-gpt4o" role="option">
-                                        gpt-4o
-                                    </li>
-                                    <li id="openai-gpt41mini" role="option">
-                                        gpt-4.1-mini
-                                    </li>
-                                    <li id="openai-gpt41" role="option">
-                                        gpt-4.1
-                                    </li>
-                                </ul>
-                            </div>
-                            <small id="openai-model-desc" class="hint"
-                                >You can pick a suggestion or type any model
-                                name your account and API key provider
-                                supports.</small
-                            >
-                            <br />
+                            (opens in a new tab).
+                        </p>
 
-                            <!-- Gemini model input -->
-                            <label
-                                for="gemini-model"
-                                id="gemini-model-label"
-                                style="display: none"
-                                >Gemini model</label
-                            >
-                            <div
-                                class="combobox combobox-list"
-                                style="display: none"
-                                id="gemini-combobox"
-                            >
-                                <div class="group">
-                                    <input
-                                        id="gemini-model"
-                                        name="geminiModel"
-                                        class="cb_edit"
-                                        type="text"
-                                        role="combobox"
-                                        aria-autocomplete="list"
-                                        aria-expanded="false"
-                                        aria-controls="gemini-listbox"
-                                        aria-describedby="gemini-model-desc"
-                                        autocomplete="off"
-                                    />
-                                    <button
-                                        id="gemini-model-button"
-                                        type="button"
-                                        tabindex="-1"
-                                        aria-label="Gemini models"
-                                        aria-expanded="false"
-                                        aria-controls="gemini-listbox"
-                                    >
-                                        <svg
-                                            width="18"
-                                            height="16"
-                                            aria-hidden="true"
-                                            focusable="false"
-                                            style="forced-color-adjust: auto"
-                                        >
-                                            <polygon
-                                                class="arrow"
-                                                stroke-width="0"
-                                                fill-opacity="0.75"
-                                                fill="currentcolor"
-                                                points="3,6 15,6 9,14"
-                                            ></polygon>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <ul
-                                    id="gemini-listbox"
-                                    role="listbox"
-                                    aria-label="Gemini models"
-                                >
-                                    <li id="gemini-auto" role="option">
-                                        auto (gemini-3-flash-preview)
-                                    </li>
-                                    <li id="gemini-pro" role="option">
-                                        gemini-3-pro-preview
-                                    </li>
-                                </ul>
-                            </div>
-                            <small
-                                id="gemini-model-desc"
-                                class="hint"
-                                style="display: none"
-                                >You can pick a suggestion or type any Gemini
-                                model name your account supports.</small
-                            >
-                            <br />
-                        </div>
-                        <!-- API key instructions -->
-                        <div id="ai-key-instructions">
-                            <h3>How to get an API key</h3>
-                            <p>
-                                If you don't have a key yet, you can visit these
-                                links (opens in a new tab). If you already have
-                                one, continue to the next step.
-                            </p>
-                            <ul>
-                                <li>
-                                    <a
-                                        href="https://platform.openai.com/api-keys"
-                                        target="_blank"
-                                        rel="noopener"
-                                    >
-                                        Get your OpenAI API key
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://aistudio.google.com/app/apikey"
-                                        target="_blank"
-                                        rel="noopener"
-                                        >Get your Google Gemini API key</a
-                                    >
-                                </li>
-                            </ul>
-                        </div>
+                        <!-- OpenAI model input -->
+                        <label for="openai-model" id="openai-model-label"
+                            >OpenAI model</label
+                        >
+                        <br />
+                        <input
+                            id="openai-model"
+                            name="openaiModel"
+                            list="openai-models"
+                            autocomplete="off"
+                            aria-describedby="openai-model-desc"
+                        />
+                        <br />
+                        <small id="openai-model-desc" class="hint"
+                            >You can pick a suggestion or type any model name
+                            your account and AI key provider supports.</small
+                        >
+                        <datalist id="openai-models">
+                            <option
+                                value="auto (gpt-4o-mini)"
+                                label="auto (GPT 4 O mini)"
+                            ></option>
+                            <option value="gpt-4o" label="GPT 4 O"></option>
+                            <option value="gpt-4.1-mini"></option>
+                            <option value="gpt-4.1"></option>
+                        </datalist>
+                        <br />
+
+                        <!-- Gemini model input -->
+                        <label
+                            for="gemini-model"
+                            id="gemini-model-label"
+                            style="display: none"
+                            >Gemini model</label
+                        >
+                        <br />
+                        <input
+                            id="gemini-model"
+                            name="geminiModel"
+                            list="gemini-models"
+                            autocomplete="off"
+                            aria-describedby="gemini-model-desc"
+                            style="display: none"
+                        />
+                        <br />
+                        <small
+                            id="gemini-model-desc"
+                            class="hint"
+                            style="display: none"
+                            >You can pick a suggestion or type any Gemini model
+                            name your account supports.</small
+                        >
+                        <datalist id="gemini-models">
+                            <option
+                                value="auto (gemini-3-flash-preview)"
+                            ></option>
+                            <option value="gemini-3-pro-preview"></option>
+                        </datalist>
                         <br />
                     </fieldset>
                 </details>
@@ -313,24 +236,15 @@
                             Choose which part of the page to capture for
                             analysis.
                         </legend>
-                        <label for="screenshot-fullpage">
-                            <input
-                                id="screenshot-fullpage"
-                                type="radio"
-                                name="screenshot"
-                                value="fullpage"
-                                checked
-                                aria-checked="true"
-                                aria-describedby="fullpage-desc"
-                            />
-                            Full page (default)
-                        </label>
-                        <small id="fullpage-desc" class="hint"
-                            >Captures the entire page from top to bottom.
-                            Slower, uses more tokens, provides broader overview.
-                            Not ideal for infinite scroll pages or sites with
-                            heavy dynamic content.</small
-                        >
+                        <div id="screenshot-info" class="info-box">
+                            <p>
+                                <strong>Important:</strong> By default, SenseUI
+                                only captures what's currently visible in your
+                                browser window (viewport). If you need to
+                                analyze an entire page, switch to Full page mode
+                                below.
+                            </p>
+                        </div>
                         <br />
                         <label for="screenshot-viewport">
                             <input
@@ -338,10 +252,11 @@
                                 type="radio"
                                 name="screenshot"
                                 value="viewport"
-                                aria-checked="false"
+                                checked
+                                aria-checked="true"
                                 aria-describedby="viewport-desc"
                             />
-                            Viewport only
+                            Viewport only (default)
                         </label>
                         <small id="viewport-desc" class="hint"
                             >Captures only what's visible on screen right now.
@@ -351,8 +266,26 @@
                         >
                         <br />
                         <br />
+                        <label for="screenshot-fullpage">
+                            <input
+                                id="screenshot-fullpage"
+                                type="radio"
+                                name="screenshot"
+                                value="fullpage"
+                                aria-checked="false"
+                                aria-describedby="fullpage-desc"
+                            />
+                            Full page
+                        </label>
+                        <small id="fullpage-desc" class="hint"
+                            >Captures the entire page from top to bottom.
+                            Slower, uses more tokens, provides broader overview.
+                            Not ideal for infinite scroll pages or sites with
+                            heavy dynamic content.</small
+                        >
                     </fieldset>
                 </details>
+                <br />
                 <!-- End Screenshot Capture Mode Section -->
                 <!-- Quick Action Buttons Section -->
                 <details name="settings" class="settings-section">
@@ -385,23 +318,134 @@
                         >
                     </fieldset>
                 </details>
+                <br />
                 <!-- End Quick Action Buttons Section -->
+                <!-- Feedback Detail Level Section -->
+                <details name="settings" class="settings-section">
+                    <summary>
+                        <h2>Feedback Detail Level</h2>
+                    </summary>
+                    <fieldset
+                        id="detail-fieldset"
+                        role="radiogroup"
+                        aria-labelledby="detail-legend"
+                    >
+                        <legend id="detail-legend">
+                            Choose how verbose SenseUI's feedback should be.
+                        </legend>
+                        <br />
+                        <label for="detail-comprehensive">
+                            <input
+                                id="detail-comprehensive"
+                                type="radio"
+                                name="detail"
+                                value="comprehensive"
+                                aria-checked="false"
+                            />
+                            Comprehensive
+                        </label>
+                        <br />
+                        <label for="detail-normal">
+                            <input
+                                id="detail-normal"
+                                type="radio"
+                                name="detail"
+                                value="normal"
+                                checked
+                                aria-checked="true"
+                            />
+                            Normal (default)
+                        </label>
+                        <br />
+                        <label for="detail-concise">
+                            <input
+                                id="detail-concise"
+                                type="radio"
+                                name="detail"
+                                value="concise"
+                                aria-checked="false"
+                            />
+                            Concise
+                        </label>
+                    </fieldset>
+                </details>
+                <br />
+                <!-- End Feedback Detail Level Section -->
+                <!-- Chat History Download Section -->
+                <details name="settings" class="settings-section">
+                    <summary>
+                        <h2>Chat History Download</h2>
+                    </summary>
+                    <fieldset
+                        id="download-fieldset"
+                        role="radiogroup"
+                        aria-labelledby="download-legend"
+                    >
+                        <legend id="download-legend">
+                            Select which conversations will be included when you
+                            export your history
+                        </legend>
+                        <br />
+                        <label for="download-all">
+                            <input
+                                id="download-all"
+                                type="radio"
+                                name="download"
+                                value="all"
+                                checked
+                                aria-checked="true"
+                            />
+                            Download all
+                        </label>
+                        <br />
+                        <label for="download-favorites">
+                            <input
+                                id="download-favorites"
+                                type="radio"
+                                name="download"
+                                value="favorites"
+                                aria-checked="false"
+                            />
+                            Only favorites
+                        </label>
+                    </fieldset>
+                </details>
+                <br />
+                <!-- End Chat History Download Section -->
+                <br />
                 <!-- Keyboard Shortcut Section -->
                 <details name="settings" class="settings-section">
                     <summary>
-                        <h2>Keyboard Shortcut</h2>
+                        <h2>Keyboard Shortcuts</h2>
                     </summary>
                     <p>
-                        You can customize the keyboard shortcut to open/close
-                        SenseUI. This won't be changed back when you reset this
-                        page, you'll need to reset it manually.
+                        You have the option to customize three configurable
+                        shortcuts to open and close SenseUI:
+                    </p>
+                    <ul>
+                        <li>
+                            <strong>Open SenseUI (Popup Mode)</strong>:
+                            `Ctrl+Shift+S`. Drops down the standard popup.
+                        </li>
+                        <li>
+                            <strong>Open SenseUI Side Panel</strong>:
+                            `Ctrl+Shift+Y`. Docks the persistent side panel.
+                        </li>
+                        <li>
+                            <strong>Close SenseUI Side Panel</strong>:
+                            `Ctrl+Shift+X`. Closes the active side panel.
+                        </li>
+                    </ul>
+                    <p>
+                        Click below to explicitly customize any of these modes.
+                        These won't be changed back when you reset this page.
                     </p>
                     <button
                         type="button"
                         id="open-shortcuts"
                         class="btn-secondary"
                     >
-                        Change keyboard shortcut<span class="sr-only">
+                        Change keyboard shortcuts<span class="sr-only">
                             (opens the browser's extension manager in new
                             tab)</span
                         >
@@ -419,24 +463,39 @@
                         To reset a shortcut, go to the browser's extension
                         manager.
                     </p>
+                    <div class="dialog-actions">
+                        <button
+                            type="button"
+                            id="cancel-reset-action"
+                            class="btn-secondary"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            id="confirm-reset-action"
+                            class="btn-primary"
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </dialog>
+                <div style="display: flex; gap: 10px; margin-top: 1rem">
                     <button
-                        type="button"
-                        id="cancel-reset-action"
+                        type="submit"
+                        id="save-settings"
                         class="btn-secondary"
                     >
-                        Cancel
+                        Save
                     </button>
                     <button
                         type="button"
-                        id="confirm-reset-action"
+                        id="save-settings-return"
                         class="btn-primary"
                     >
-                        Confirm
+                        Save and return to home
                     </button>
-                </dialog>
-                <button type="submit" id="save-settings" class="btn-primary">
-                    Save
-                </button>
+                </div>
                 <br />
                 <button
                     type="button"
