@@ -1959,3 +1959,21 @@ async function sendMessage() {
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+// ============================================================================
+// MESSAGE LISTENERS
+// ============================================================================
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'close_side_panel') {
+        window.close();
+    }
+});
+
+// Auto-focus chat input explicitly for shortcut conveniences (Side Panel & Popup alike)
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        // Small timeout ensures Chrome has fully rendered the DOM and focus holds
+        setTimeout(() => chatInput.focus(), 100);
+    }
+});

@@ -11,10 +11,13 @@
         "48": "icons/icon48.png",
         "128": "icons/icon128.png"
     },
-    "permissions": ["activeTab", "storage", "scripting", "tabs"],
+    "permissions": ["activeTab", "storage", "scripting", "tabs", "sidePanel"],
     "host_permissions": ["<all_urls>"],
     "background": {
         "service_worker": "background.js"
+    },
+    "side_panel": {
+        "default_path": "index.html"
     },
     "action": {
         "default_popup": "index.html",
@@ -31,7 +34,21 @@
                 "default": "Ctrl+Shift+S",
                 "mac": "Command+Shift+S"
             },
-            "description": "Open SenseUI"
+            "description": "Open SenseUI (Popup Mode)"
+        },
+        "open_side_panel": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+Y",
+                "mac": "Command+Shift+Y"
+            },
+            "description": "Open SenseUI Side Panel"
+        },
+        "close_side_panel": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+X",
+                "mac": "Command+Shift+X"
+            },
+            "description": "Close SenseUI Side Panel"
         }
     },
     "content_security_policy": {

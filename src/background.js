@@ -18,3 +18,20 @@ chrome.runtime.onInstalled.addListener((details) => {
         // chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') });
     }
 });
+
+// Listen for keyboard commands (side panel open/close)
+chrome.commands.onCommand.addListener((command) => {
+    if (command === 'open_side_panel') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs && tabs.length > 0) {
+                chrome.sidePanel
+                    .open({ windowId: tabs[0].windowId })
+                    .catch(console.error);
+            }
+        });
+    } else if (command === 'close_side_panel') {
+        chrome.runtime.sendMessage({ action: 'close_side_panel' }).catch(() => {
+            // Panel may not be open, ignore errors
+        });
+    }
+});
