@@ -386,30 +386,48 @@
                     </fieldset>
                 </details>
                 <!-- End Quick Action Buttons Section -->
-                <!-- Keyboard Shortcut Section -->
+                <!-- Keyboard Shortcuts Section -->
                 <details name="settings" class="settings-section">
                     <summary>
-                        <h2>Keyboard Shortcut</h2>
+                        <h2>Keyboard Shortcuts</h2>
                     </summary>
                     <p>
-                        You can customize the keyboard shortcut to open/close
-                        SenseUI. This won't be changed back when you reset this
-                        page, you'll need to reset it manually.
+                        You have the option to customize three configurable
+                        shortcuts to open and close SenseUI:
+                    </p>
+                    <ul>
+                        <li>
+                            <strong>Open SenseUI (Popup Mode)</strong>:
+                            `Ctrl+Shift+S`. Drops down the standard popup. This closes when you click away or press the shortcut again.
+                        </li>
+                        <li>
+                            <strong>Open SenseUI Side Panel</strong>:
+                            `Ctrl+Shift+Y`. Docks the persistent side panel. Doesn't close until you use the following shortcut.
+                        </li>
+                        <li>
+                            <strong>Close SenseUI Side Panel</strong>:
+                            `Ctrl+Shift+X`. Closes the active side panel.
+                        </li>
+                    </ul>
+                    <p>
+                        Click below to explicitly customize any of these modes.
+                        These won't be changed back when you reset this page.
                     </p>
                     <button
                         type="button"
                         id="open-shortcuts"
                         class="btn-secondary"
                     >
-                        Change keyboard shortcut<span class="sr-only">
+                        Change keyboard shortcuts
+                        <span class="sr-only">
                             (opens the browser's extension manager in new
-                            tab)</span
-                        >
+                            tab)
+                        </span>
                     </button>
                     <br />
                     <br />
                 </details>
-                <!-- End Keyboard Shortcut Section -->
+                <!-- End Keyboard Shortcuts Section -->
 
                 <dialog id="reset-warning-dialog">
                     <h3>Warning</h3>
