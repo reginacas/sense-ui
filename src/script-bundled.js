@@ -46,6 +46,7 @@ CRITICAL RULES:
 - Answer the question asked - be direct and concise. Don't add fluff.
 - Do not offer code unless specifically requested
 - When reporting issues or violations, NEVER quote or restate the rule or principle being violated. Go straight to describing what you see, where it is, why it is a problem, and how to fix it."
+- When reporting issues or violations, NEVER quote or restate the rule or principle being violated. Go straight to describing what you see, where it is, why it is a problem, and how to fix it."
 
 LANGUAGE HANDLING:
 - ALWAYS respond in English by default
@@ -127,11 +128,13 @@ Legibility and readability:
 - Body text lines should not span uncomfortably wide. Violation: lines of body text stretch across the full width of a wide container, making it hard to track from line to line.
 - Lines of text within paragraphs should have visible breathing room between them.
 - Line breaks should not create awkward widows or orphans (single words on a line by themselves at the end or beginning of a paragraph).
+- Line breaks should not create awkward widows or orphans (single words on a line by themselves at the end or beginning of a paragraph).
 
 Layout and spacing:
 - Adjacent UI elements must have visible space between them. Violation: two or more elements appear to touch or nearly touch with no visible gap.
 - Content inside a container must not appear flush against the container's edge. 
 - Closely grouped elements must be visually aligned.
+- Body text and paragraphs must be left-aligned. Center-alignment is acceptable for headings and short standalone text. 
 - Body text and paragraphs must be left-aligned. Center-alignment is acceptable for headings and short standalone text. 
 - Bullet list text must never be center-aligned. 
 - Elements must not overlap each other. 
@@ -313,6 +316,30 @@ function parseCommand(userInput) {
             text: trimmed.replace('/alignment', '').trim(),
         };
     }
+    if (trimmed.startsWith('/type')) {
+        return {
+            command: '/type',
+            text: trimmed.replace('/type', '').trim(),
+        };
+    }
+    if (trimmed.startsWith('/color')) {
+        return {
+            command: '/color',
+            text: trimmed.replace('/color', '').trim(),
+        };
+    }
+    if (trimmed.startsWith('/spacing')) {
+        return {
+            command: '/spacing',
+            text: trimmed.replace('/spacing', '').trim(),
+        };
+    }
+    if (trimmed.startsWith('/alignment')) {
+        return {
+            command: '/alignment',
+            text: trimmed.replace('/alignment', '').trim(),
+        };
+    }
     return { command: null, text: trimmed };
 }
 
@@ -392,6 +419,14 @@ async function getPromptForCommand(command, project) {
                 : CONFIG.PROMPTS.DESCRIBE;
         case '/issues':
             return buildIssuesPrompt(project);
+        case '/type':
+            return buildAspectPrompt('TYPOGRAPHY', project);
+        case '/color':
+            return buildAspectPrompt('COLOR', project);
+        case '/spacing':
+            return buildAspectPrompt('SPACING', project);
+        case '/alignment':
+            return buildAspectPrompt('ALIGNMENT', project);
         case '/type':
             return buildAspectPrompt('TYPOGRAPHY', project);
         case '/color':
