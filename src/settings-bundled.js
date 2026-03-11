@@ -471,10 +471,13 @@ async function handleSubmit(event) {
         await updateApiKeyStatus();
         showStatus('Settings saved successfully!');
 
-        // Navigate back to chat page and focus on input
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 500); // Small delay to show success message
+        const stayOnPage = document.getElementById('stay-on-page')?.checked;
+        if (!stayOnPage) {
+            // Navigate back to chat page and focus on input
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500); // Small delay to show success message
+        }
     } catch (error) {
         console.error('Error saving settings:', error);
         showStatus(`Failed to save settings: ${error.message}`, true);
