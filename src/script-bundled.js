@@ -229,7 +229,6 @@ Find violations of any of these principles:
 - Bullet list text must never be center-aligned. 
 - Elements must not overlap each other. 
 - Elements should have consistent and appropriate corner rounding. Flag cases where the border-radius appears uneven across corners or distorted. Suggest a value rather than just saying "inconsistent border-radius".
-- Percentage‑based border‑radius should be used only for circles or pill shapes (50% or higher). Otherwise, fixed pixel or rem values should be used for all other elements to ensure consistent, predictable corner rounding.
 
 IMPORTANT RULES:
 1. For each issue, describe where it appears visually on the page, why it is a problem, and suggest a concrete fix.
