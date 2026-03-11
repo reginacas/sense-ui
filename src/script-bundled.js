@@ -121,7 +121,8 @@ If no violations are found in any category, skip the violations list and write o
 
 ANALYZE FOR:
 Legibility and readability:
-- Body text must appear comfortably readable at a glance; titles must appear clearly larger than body text. 
+- Body text must appear comfortably readable at a glance; titles must appear clearly larger than body text. A violation is when the body text looks too small to read comfortably, or a title does not visually stand out in size from surrounding content.
+- Decorative or narrow/condensed fonts must only be used for headlines, not body text. 
 - Body text lines should not span uncomfortably wide. Violation: lines of body text stretch across the full width of a wide container, making it hard to track from line to line.
 - Lines of text within paragraphs should have visible breathing room between them.
 - Line breaks should not create awkward widows or orphans (single words on a line by themselves at the end or beginning of a paragraph).
@@ -130,7 +131,7 @@ Layout and spacing:
 - Adjacent UI elements must have visible space between them. Violation: two or more elements appear to touch or nearly touch with no visible gap.
 - Content inside a container must not appear flush against the container's edge. 
 - Closely grouped elements must be visually aligned.
-- Paragraphs must be left-aligned. Center-alignment is acceptable for headings and short standalone text. 
+- Body text and paragraphs must be left-aligned. Center-alignment is acceptable for headings and short standalone text. 
 - Bullet list text must never be center-aligned. 
 - Elements must not overlap each other. 
 - Elements should have consistent and appropriate corner rounding. Flag cases where the border-radius appears uneven across corners or distorted. Suggest a value rather than just saying "inconsistent border-radius".
@@ -140,15 +141,13 @@ Color and contrast:
 - Colors on the page should look harmonious together. 
 
 Use of images and media:
-- Images must appear clear. 
+- Images must appear sharp and clear. 
 - Image sizes must suit their context.
 
 IMPORTANT RULES:
 1. Be specific and visual in describing violations. Avoid vague statements like "poor contrast" or "bad layout".
 2. Do not cite pixel values, hex color codes, CSS properties, or selector names — you are working from a screenshot only. Describe colors by name (e.g., "light grey", "dark navy") without inventing hex values.
 3. Every response must translate visual observations into meaning — explain not just what something looks like, but what that visual property does for the user experience and how the developer can act on it.
-4. When reporting issues or violations, NEVER quote the exact phrasing of the principle being violated. Go straight to describing what you see, where it is, why it is a problem, and how to fix it."
-
 `,
 
         TYPOGRAPHY: `Analyze the typography of the current webpage based on the screenshot.
@@ -1408,20 +1407,24 @@ async function processUserInput(userInput, forceRefresh = false) {
         currentPageUrl = pageUrl;
     }
 
-    // Only send HTML/CSS/computed styles for /describe — all other commands use screenshot + metadata only
-    const contextCommands = ['/type', '/color', '/spacing', '/alignment'];
-    const llmContext =
-        command === '/describe' || contextCommands.includes(command)
-            ? context
-            : {
-                  screenshot: context.screenshot,
-                  metadata: context.metadata
-                      ? {
-                            title: context.metadata.title,
-                            url: context.metadata.url,
-                        }
-                      : null,
-              };
+    // Only send HTML/CSS/computed styles for /describe. For aspect prompts, send only screenshot and metadata.
+    const aspectCommands = ['/type', '/color', '/spacing', '/alignment'];
+    let llmContext;
+    if (command === '/describe') {
+        llmContext = context;
+    } else if (aspectCommands.includes(command)) {
+        llmContext = {
+            screenshot: context.screenshot,
+            metadata: context.metadata
+                ? {
+                      title: context.metadata.title,
+                      url: context.metadata.url,
+                  }
+                : null,
+        };
+    } else {
+        llmContext = context;
+    }
 
     const label = command || '(no command)';
     console.log(`[${label}] html included:`, 'html' in llmContext);
