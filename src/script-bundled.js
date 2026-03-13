@@ -1243,7 +1243,7 @@ async function sendToGemini(
     modelName,
 ) {
     const model = modelName || CONFIG.API.GEMINI.MODEL;
-    const endpoint = `${CONFIG.API.GEMINI.ENDPOINT}/${model}:generateContent?key=${apiKey}`;
+    const endpoint = `${CONFIG.API.GEMINI.ENDPOINT}/${model}:generateContent`;
 
     // Combine system prompt with user message for Gemini
     const fullMessage = `${systemPrompt}\n\n${userMessage}`;
@@ -1268,7 +1268,10 @@ async function sendToGemini(
 
     const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify(requestBody),
         signal: currentAbortController?.signal,
     });
