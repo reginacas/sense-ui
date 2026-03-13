@@ -205,6 +205,16 @@
                                 consistency
                             </li>
                             <li>
+                                /penpot: Reads the linked Penpot project
+                                properties and generates a practical coding
+                                starter brief
+                            </li>
+                            <li>
+                                /compare: Compares your current implementation
+                                with the linked Penpot project and highlights
+                                what to change
+                            </li>
+                            <li>
                                 /refresh: Re-captures page data (HTML, CSS, and
                                 screenshot)
                             </li>
@@ -312,6 +322,13 @@
                             </li>
                             <li>Page metadata: the page title and URL</li>
                         </ul>
+                        <p>
+                            Penpot-specific commands use project-level Penpot
+                            data from the active project. The <kbd>/penpot</kbd>
+                            command uses Penpot data only, while
+                            <kbd>/compare</kbd> uses both Penpot and current
+                            page data.
+                        </p>
                         <p>
                             This keeps the prompts more focused, avoiding data
                             overload and hallucinations. The richer context;
