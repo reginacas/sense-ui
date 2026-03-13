@@ -264,6 +264,51 @@ IMPORTANT RULES:
 3. Explain how misalignment affects the visual consistency, professionalism, or readability of the design.
 5. When reporting issues or violations, NEVER quote the exact phrasing of the principle being violated. Go straight to describing what you see, where it is, why it is a problem, and how to fix it."
 `,
+
+        PENPOT_PROPERTIES: `Generate a practical coding starter brief based on the connected Penpot project data.
+
+RESPONSE STRUCTURE:
+Start with: ### Penpot coding starter for [Project Name]
+
+#### What to build first
+- List the most important screens, frames, or components to implement first.
+
+#### Visual properties to implement
+- Summarize typography, spacing, colors, border radius, and layout properties from Penpot data.
+- Prefer concrete values when present in Penpot context.
+
+#### Component checklist
+- List key components with the visual properties that should be preserved in code.
+
+#### Missing information
+- List unclear or missing design properties that the developer should verify in Penpot.
+
+IMPORTANT RULES:
+1. Use only the provided Penpot context. If a value is missing, say it is missing.
+2. Do not generate full code blocks unless the user explicitly asks for code.
+3. Keep the output practical so a blind developer can start implementing confidently.`,
+
+        PENPOT_COMPARE: `Compare the current implemented webpage against the connected Penpot project data.
+
+RESPONSE STRUCTURE:
+Start with: ### Penpot implementation comparison for [Project Name]
+
+#### What matches
+- List what appears consistent between the current page and Penpot properties.
+
+#### What differs
+- List mismatches in typography, spacing, color, layout, sizing, and component structure.
+
+#### Recommended changes
+- For each mismatch, suggest one concrete action to align the code with Penpot.
+
+#### Confidence and gaps
+- Briefly state any limits caused by missing Penpot properties or unclear screenshot evidence.
+
+IMPORTANT RULES:
+1. Ground all comparisons in the provided screenshot/context and Penpot context only.
+2. If Penpot context is incomplete, clearly say so instead of guessing.
+3. Prioritize actionable and specific fixes over generic advice.`,
     },
 
     LIMITS: {
@@ -277,6 +322,18 @@ IMPORTANT RULES:
 // Parse command from user input
 function parseCommand(userInput) {
     const trimmed = userInput.trim();
+    if (trimmed.startsWith('/penpot')) {
+        return {
+            command: '/penpot',
+            text: trimmed.replace('/penpot', '').trim(),
+        };
+    }
+    if (trimmed.startsWith('/compare')) {
+        return {
+            command: '/compare',
+            text: trimmed.replace('/compare', '').trim(),
+        };
+    }
     if (trimmed.startsWith('/describe')) {
         return {
             command: '/describe',
@@ -404,6 +461,10 @@ Assess how well the current ${aspectKey.toLowerCase()} choices support the inten
 // Get command-specific prompt (without project context - that's added separately)
 async function getPromptForCommand(command, project) {
     switch (command) {
+        case '/penpot':
+            return CONFIG.PROMPTS.PENPOT_PROPERTIES;
+        case '/compare':
+            return CONFIG.PROMPTS.PENPOT_COMPARE;
         case '/describe':
             // Check screenshot mode to determine which describe prompt to use
             const result = await chrome.storage.local.get(
@@ -1051,6 +1112,174 @@ async function extractPageContent() {
 }
 
 // ============================================================================
+// PENPOT CONTEXT
+// ============================================================================
+
+function normalizePenpotBaseUrl(baseUrl) {
+    const fallback = 'https://design.penpot.app';
+    const raw = (baseUrl || '').trim();
+    if (!raw) return fallback;
+    return raw.replace(/\/+$/, '');
+}
+
+function listUniqueValuesFromObject(root, keys, maxItems = 20) {
+    const values = [];
+    const queue = [root];
+
+    while (queue.length > 0 && values.length < maxItems) {
+        const current = queue.shift();
+        if (!current || typeof current !== 'object') continue;
+
+        if (Array.isArray(current)) {
+            current.forEach((item) => queue.push(item));
+            continue;
+        }
+
+        for (const [k, v] of Object.entries(current)) {
+            if (values.length >= maxItems) break;
+            if (keys.includes(k) && v !== null && v !== undefined && v !== '') {
+                const normalized = String(v).trim();
+                if (normalized && !values.includes(normalized)) {
+                    values.push(normalized);
+                }
+            }
+            if (v && typeof v === 'object') queue.push(v);
+        }
+    }
+
+    return values;
+}
+
+function buildPenpotSummary(data, sourceMethod) {
+    const names = listUniqueValuesFromObject(data, ['name'], 24);
+    const fontFamilies = listUniqueValuesFromObject(data, ['fontFamily'], 12);
+    const fontSizes = listUniqueValuesFromObject(data, ['fontSize'], 12);
+    const fontWeights = listUniqueValuesFromObject(data, ['fontWeight'], 12);
+    const lineHeights = listUniqueValuesFromObject(data, ['lineHeight'], 12);
+    const colors = listUniqueValuesFromObject(
+        data,
+        ['color', 'fillColor', 'strokeColor'],
+        20,
+    );
+    const radii = listUniqueValuesFromObject(
+        data,
+        ['r1', 'r2', 'r3', 'r4'],
+        12,
+    );
+    const spacing = listUniqueValuesFromObject(
+        data,
+        ['layoutGap', 'rowGap', 'columnGap', 'p1', 'p2', 'p3', 'p4'],
+        16,
+    );
+
+    return {
+        sourceMethod,
+        sampleNames: names,
+        typography: {
+            fontFamilies,
+            fontSizes,
+            fontWeights,
+            lineHeights,
+        },
+        colors,
+        borderRadius: radii,
+        spacing,
+    };
+}
+
+function formatPenpotSummaryForPrompt(penpotContext) {
+    if (!penpotContext || !penpotContext.summary) return '';
+    const s = penpotContext.summary;
+
+    return [
+        `Source method: ${s.sourceMethod}`,
+        `Named elements sample: ${s.sampleNames.slice(0, 12).join(', ') || 'none found'}`,
+        `Typography - families: ${s.typography.fontFamilies.join(', ') || 'none found'}`,
+        `Typography - sizes: ${s.typography.fontSizes.join(', ') || 'none found'}`,
+        `Typography - weights: ${s.typography.fontWeights.join(', ') || 'none found'}`,
+        `Typography - line heights: ${s.typography.lineHeights.join(', ') || 'none found'}`,
+        `Colors sample: ${s.colors.join(', ') || 'none found'}`,
+        `Border radius sample: ${s.borderRadius.join(', ') || 'none found'}`,
+        `Spacing sample: ${s.spacing.join(', ') || 'none found'}`,
+    ].join('\n');
+}
+
+async function callPenpotMethod(baseUrl, methodName, body) {
+    const endpoint = `${baseUrl}/api/main/methods/${methodName}`;
+    const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+    };
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: currentAbortController?.signal,
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+            `Penpot ${methodName} failed (${response.status}): ${errorText}`,
+        );
+    }
+
+    return await response.json();
+}
+
+async function fetchPenpotContext(project) {
+    if (!project || !project.penpotFileId) {
+        return null;
+    }
+
+    const baseUrl = normalizePenpotBaseUrl(project.penpotBaseUrl);
+    const fileId = project.penpotFileId;
+    const pageId = project.penpotPageId || undefined;
+    const shareId = project.penpotShareId || undefined;
+
+    const attempts = [];
+
+    if (pageId) {
+        attempts.push({
+            method: 'get-page',
+            body: { fileId, pageId, ...(shareId ? { shareId } : {}) },
+        });
+    }
+
+    if (shareId) {
+        attempts.push({
+            method: 'get-view-only-bundle',
+            body: { fileId, shareId },
+        });
+    }
+
+    attempts.push({ method: 'get-file', body: { id: fileId } });
+
+    let lastError = null;
+    for (const attempt of attempts) {
+        try {
+            const raw = await callPenpotMethod(
+                baseUrl,
+                attempt.method,
+                attempt.body,
+            );
+            return {
+                fileId,
+                pageId: pageId || null,
+                shareId: shareId || null,
+                baseUrl,
+                summary: buildPenpotSummary(raw, attempt.method),
+            };
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('Could not retrieve Penpot context');
+}
+
+// ============================================================================
 // LLM CLIENT
 // ============================================================================
 
@@ -1146,6 +1375,9 @@ async function sendToLLM(userMessage, context, systemPrompt, provider) {
             })
             .join('\\n\\n');
         contextText += `\\n\\nCOMPUTED STYLES (browser-resolved values):\\n${stylesText}`;
+    }
+    if (context.penpot) {
+        contextText += `\\n\\nPENPOT DESIGN CONTEXT:\\n${formatPenpotSummaryForPrompt(context.penpot)}`;
     }
 
     const fullMessage = `${userMessage}${contextText}`;
@@ -1421,31 +1653,80 @@ async function processUserInput(userInput, forceRefresh = false) {
 
     // Check if we need to capture or use cached context
     let context = {};
+    const penpotCommands = ['/penpot', '/compare'];
+    const shouldLoadPenpot = penpotCommands.includes(command);
+    const shouldCapturePageContext = command !== '/penpot';
 
-    // Get current page URL to detect navigation
-    const [activeTab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-    });
-    const pageUrl = activeTab?.url;
+    if (shouldCapturePageContext) {
+        // Get current page URL to detect navigation
+        const [activeTab] = await chrome.tabs.query({
+            active: true,
+            currentWindow: true,
+        });
+        const pageUrl = activeTab?.url;
 
-    // Use cached context if available and page hasn't changed
-    if (!forceRefresh && cachedContext && currentPageUrl === pageUrl) {
-        context = cachedContext;
-        console.log('✅ Using cached page context');
-        announce('Using cached page data');
-    } else {
-        // Capture fresh context
-        console.log('📸 Capturing fresh page context...');
-        context = await capturePageContext();
-        cachedContext = context;
-        currentPageUrl = pageUrl;
+        // Use cached context if available and page hasn't changed
+        if (!forceRefresh && cachedContext && currentPageUrl === pageUrl) {
+            context = cachedContext;
+            console.log('✅ Using cached page context');
+            announce('Using cached page data');
+        } else {
+            // Capture fresh context
+            console.log('📸 Capturing fresh page context...');
+            context = await capturePageContext();
+            cachedContext = context;
+            currentPageUrl = pageUrl;
+        }
+    }
+
+    if (shouldLoadPenpot) {
+        if (!activeProject || !activeProject.penpotFileId) {
+            throw new Error(
+                'This command needs a project with a Penpot File ID. Open Projects and add Penpot details first.',
+            );
+        }
+
+        const penpotCacheKey = JSON.stringify({
+            id: activeProject.id,
+            fileId: activeProject.penpotFileId,
+            pageId: activeProject.penpotPageId || '',
+            shareId: activeProject.penpotShareId || '',
+            baseUrl: activeProject.penpotBaseUrl || '',
+        });
+
+        if (
+            !forceRefresh &&
+            cachedPenpotContext &&
+            cachedPenpotKey === penpotCacheKey
+        ) {
+            context.penpot = cachedPenpotContext;
+            console.log('✅ Using cached Penpot context');
+        } else {
+            console.log('🎨 Fetching Penpot design context...');
+            try {
+                context.penpot = await fetchPenpotContext(activeProject);
+            } catch (error) {
+                throw new Error(
+                    `Could not read Penpot data. Check File ID/Base URL and, for private files, use a Share ID. Details: ${error.message}`,
+                );
+            }
+            cachedPenpotContext = context.penpot;
+            cachedPenpotKey = penpotCacheKey;
+        }
     }
 
     // Only send HTML/CSS/computed styles for /describe. For aspect prompts, send only screenshot and metadata.
     const aspectCommands = ['/type', '/color', '/spacing', '/alignment'];
     let llmContext;
-    if (command === '/describe') {
+    if (command === '/penpot') {
+        llmContext = {
+            penpot: context.penpot,
+            metadata: {
+                title: activeProject?.name || 'Active project',
+                url: 'penpot-context-only',
+            },
+        };
+    } else if (command === '/describe') {
         llmContext = context;
     } else if (aspectCommands.includes(command)) {
         llmContext = {
@@ -1469,10 +1750,19 @@ async function processUserInput(userInput, forceRefresh = false) {
         'computedStyles' in llmContext,
     );
     console.log(`[${label}] screenshot included:`, !!llmContext.screenshot);
+    console.log(`[${label}] penpot included:`, !!llmContext.penpot);
     console.log(`[${label}] metadata sent:`, llmContext.metadata);
 
     // Send to LLM
-    const userMessage = text || userInput;
+    let userMessage = text || userInput;
+    if (command === '/penpot' && !text) {
+        userMessage =
+            'Extract implementation-ready design properties from the linked Penpot project so I can start coding.';
+    }
+    if (command === '/compare' && !text) {
+        userMessage =
+            'Compare my current implementation with the linked Penpot project and tell me what should be changed.';
+    }
     const responseText = await sendToLLM(
         userMessage,
         llmContext,
@@ -1511,6 +1801,8 @@ let projectSelect;
 // Cache for page context (captured once per session)
 let cachedContext = null;
 let currentPageUrl = null;
+let cachedPenpotContext = null;
+let cachedPenpotKey = null;
 
 // Abort controller for cancelling requests
 let currentAbortController = null;
@@ -1685,10 +1977,12 @@ async function handleProjectChange() {
         // Add system message to chat
         const systemMsg = document.createElement('div');
         systemMsg.className = 'system-response';
+        const hasPenpot = !!selectedProject.penpotFileId;
         systemMsg.innerHTML = `<h2>System</h2><p>Project loaded: <strong>${selectedProject.name}</strong></p>
         <p>AI feedback will now be aligned with:<br>
         • Aesthetic: ${selectedProject.aesthetic}<br>
-        • Purpose: ${selectedProject.purpose}</p>`;
+        • Purpose: ${selectedProject.purpose}<br>
+        • Penpot linked: ${hasPenpot ? 'Yes' : 'No'}</p>`;
         chatMessages.appendChild(systemMsg);
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -2028,6 +2322,8 @@ async function sendMessage() {
         // Clear cache and show loading message
         cachedContext = null;
         currentPageUrl = null;
+        cachedPenpotContext = null;
+        cachedPenpotKey = null;
 
         const refreshDiv = document.createElement('div');
         refreshDiv.className = 'system-response loading-response';

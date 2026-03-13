@@ -183,8 +183,14 @@ async function renderProjectsList() {
 
         const projectDetails = document.createElement('div');
         projectDetails.className = 'project-details-content';
+        const hasPenpotConfig = !!(
+            project.penpotFileId ||
+            project.penpotPageId ||
+            project.penpotShareId
+        );
         projectDetails.innerHTML = `<p><strong>Aesthetic:</strong> ${project.aesthetic}</p>
-                                    <p><strong>Purpose:</strong> ${project.purpose}</p>`;
+                                    <p><strong>Purpose:</strong> ${project.purpose}</p>
+                                    <p><strong>Penpot linked:</strong> ${hasPenpotConfig ? 'Yes' : 'No'}</p>`;
 
         detailsElement.appendChild(summary);
         detailsElement.appendChild(projectDetails);
@@ -224,6 +230,14 @@ function editProject(project) {
     document.getElementById('project-name').value = project.name;
     document.getElementById('project-aesthetic').value = project.aesthetic;
     document.getElementById('project-purpose').value = project.purpose;
+    document.getElementById('penpot-file-id').value =
+        project.penpotFileId || '';
+    document.getElementById('penpot-page-id').value =
+        project.penpotPageId || '';
+    document.getElementById('penpot-share-id').value =
+        project.penpotShareId || '';
+    document.getElementById('penpot-base-url').value =
+        project.penpotBaseUrl || '';
     document.getElementById('edit-project-id').value = project.id;
 
     // Update form heading and button text
@@ -316,6 +330,14 @@ async function handleFormSubmit(event) {
     const name = document.getElementById('project-name').value.trim();
     const aesthetic = document.getElementById('project-aesthetic').value.trim();
     const purpose = document.getElementById('project-purpose').value.trim();
+    const penpotFileId = document.getElementById('penpot-file-id').value.trim();
+    const penpotPageId = document.getElementById('penpot-page-id').value.trim();
+    const penpotShareId = document
+        .getElementById('penpot-share-id')
+        .value.trim();
+    const penpotBaseUrl = document
+        .getElementById('penpot-base-url')
+        .value.trim();
     const editId = document.getElementById('edit-project-id').value;
 
     // Validation - only project name is required
@@ -324,13 +346,25 @@ async function handleFormSubmit(event) {
         return;
     }
 
-    const project = { name, aesthetic, purpose };
+    const project = {
+        name,
+        aesthetic,
+        purpose,
+        penpotFileId,
+        penpotPageId,
+        penpotShareId,
+        penpotBaseUrl,
+    };
 
     try {
         console.log('📝 Form submitted with data:', {
             name,
             aesthetic,
             purpose,
+            penpotFileId,
+            penpotPageId,
+            penpotShareId,
+            penpotBaseUrl,
             editId,
         });
         const savedProject = await saveProject(project, editId || null);
