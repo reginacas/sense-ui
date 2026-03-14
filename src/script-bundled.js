@@ -271,6 +271,8 @@ IMPORTANT RULES:
         MAX_CSS_LENGTH: 50000,
         SCREENSHOT_QUALITY: 0.8,
         SCREENSHOT_FORMAT: 'jpeg',
+        MIN_VIEWPORT_WIDTH: 1000,
+        MIN_VIEWPORT_HEIGHT: 700,
     },
 };
 
@@ -852,17 +854,19 @@ async function captureScreenshot() {
         const settings = result[CONFIG.STORAGE_KEYS.USER_SETTINGS] || {};
         const screenshotMode = settings.screenshotMode || 'fullpage';
 
-        if (screenshotMode === 'fullpage') {
-            return await captureFullPageScreenshot();
-        }
-
-        // Default: viewport only
         const [activeTab] = await chrome.tabs.query({
             active: true,
             currentWindow: true,
         });
         if (!activeTab) throw new Error('No active tab found');
 
+        await warnIfViewportIsSmall(activeTab.id);
+
+        if (screenshotMode === 'fullpage') {
+            return await captureFullPageScreenshot();
+        }
+
+        // Default: viewport only
         const dataUrl = await chrome.tabs.captureVisibleTab(null, {
             format: CONFIG.LIMITS.SCREENSHOT_FORMAT,
             quality: Math.round(CONFIG.LIMITS.SCREENSHOT_QUALITY * 100),
@@ -1507,6 +1511,7 @@ let chatMessages;
 let chatInput;
 let commandDatalist;
 let projectSelect;
+let lastScreenshotWarning = '';
 
 // Cache for page context (captured once per session)
 let cachedContext = null;
@@ -1706,6 +1711,38 @@ function announce(msg) {
     live.textContent = msg;
     document.body.appendChild(live);
     setTimeout(() => live.remove(), 1500);
+}
+
+async function warnIfViewportIsSmall(tabId) {
+    const [viewportInfo] = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => ({
+            width: window.innerWidth,
+            height: window.innerHeight,
+        }),
+    });
+
+    const viewport = viewportInfo?.result;
+    if (!viewport) return;
+
+    const { width, height } = viewport;
+    const isSmallViewport =
+        width < CONFIG.LIMITS.MIN_VIEWPORT_WIDTH ||
+        height < CONFIG.LIMITS.MIN_VIEWPORT_HEIGHT;
+
+    if (!isSmallViewport) {
+        lastScreenshotWarning = '';
+        return;
+    }
+
+    const warning = `Screenshot quality warning: Browser viewport is ${width}x${height}px. Analysis may miss content. Resize the window and run /refresh.`;
+
+    if (warning !== lastScreenshotWarning) {
+        announce(
+            `Warning: browser viewport is ${width} by ${height} pixels. Screenshot may be incomplete. Resize the window and run slash refresh.`,
+        );
+        lastScreenshotWarning = warning;
+    }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
