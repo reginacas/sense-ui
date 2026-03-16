@@ -1517,6 +1517,14 @@ let lastScreenshotWarning = '';
 let cachedContext = null;
 let currentPageUrl = null;
 
+// Session screenshot timeline for export (before/after)
+let sessionFirstScreenshot = null;
+let sessionFirstScreenshotUrl = null;
+let sessionFirstScreenshotTitle = null;
+let sessionLatestScreenshot = null;
+let sessionLatestScreenshotUrl = null;
+let sessionLatestScreenshotTitle = null;
+
 // Abort controller for cancelling requests
 let currentAbortController = null;
 let isGenerating = false;
@@ -1532,6 +1540,33 @@ async function saveChatHistory() {
     } catch (error) {
         console.error('Failed to save chat history:', error);
     }
+}
+
+function updateSessionScreenshotState(context) {
+    if (!context?.screenshot) return;
+
+    const screenshot = context.screenshot;
+    const url = context?.metadata?.url || context?.url || null;
+    const title = context?.metadata?.title || null;
+
+    if (!sessionFirstScreenshot) {
+        sessionFirstScreenshot = screenshot;
+        sessionFirstScreenshotUrl = url;
+        sessionFirstScreenshotTitle = title;
+    }
+
+    sessionLatestScreenshot = screenshot;
+    sessionLatestScreenshotUrl = url;
+    sessionLatestScreenshotTitle = title;
+}
+
+function resetSessionScreenshotState() {
+    sessionFirstScreenshot = null;
+    sessionFirstScreenshotUrl = null;
+    sessionFirstScreenshotTitle = null;
+    sessionLatestScreenshot = null;
+    sessionLatestScreenshotUrl = null;
+    sessionLatestScreenshotTitle = null;
 }
 
 // Load chat history from storage
@@ -1908,26 +1943,47 @@ async function downloadChatHistory() {
         active: true,
         currentWindow: true,
     });
-    const pageUrl = activeTab?.url || 'Unknown page';
-    const pageTitle = activeTab?.title || 'Unknown title';
+    const pageUrl =
+        sessionLatestScreenshotUrl ||
+        sessionFirstScreenshotUrl ||
+        activeTab?.url ||
+        'Unknown page';
+    const pageTitle =
+        sessionLatestScreenshotTitle ||
+        sessionFirstScreenshotTitle ||
+        activeTab?.title ||
+        'Unknown title';
     const timestamp = new Date().toLocaleString();
 
-    // Use cached screenshot or capture a fresh one now
-    let screenshot = cachedContext?.screenshot || null;
-    if (!screenshot) {
-        try {
-            screenshot = await captureScreenshot();
-        } catch (e) {
-            console.warn('Could not capture screenshot for export:', e);
-        }
-    }
+    const hasFirst = !!sessionFirstScreenshot;
+    const hasLatest = !!sessionLatestScreenshot;
+    const isSameScreenshot =
+        hasFirst &&
+        hasLatest &&
+        sessionFirstScreenshot === sessionLatestScreenshot;
 
-    const screenshotSection = screenshot
-        ? `<section class="screenshot-section">
-            <h2>Screenshot used for analysis</h2>
-            <img src="${screenshot}" alt="Screenshot of ${pageTitle} captured during analysis" style="max-width:100%;border:1px solid #444;border-radius:4px;">
+    const screenshotSection =
+        hasFirst || hasLatest
+            ? `<section class="screenshot-section" aria-label="Screenshots used during this chat session">
+            <h2>Screenshots used during this chat session</h2>
+            ${
+                hasFirst
+                    ? `<h3>Before (first analyzed state)</h3>
+            <img src="${sessionFirstScreenshot}" alt="Before screenshot of ${sessionFirstScreenshotTitle || pageTitle}" style="max-width:100%;border:1px solid #444;border-radius:4px;">`
+                    : `<p>Before screenshot not available in this session.</p>`
+            }
+            ${
+                hasLatest
+                    ? `<h3>After (most recent analyzed state)</h3>
+            <img src="${sessionLatestScreenshot}" alt="After screenshot of ${sessionLatestScreenshotTitle || pageTitle}" style="max-width:100%;border:1px solid #444;border-radius:4px;">`
+                    : `<p>After screenshot not available in this session.</p>`
+            }
+            ${isSameScreenshot ? '<p>Only one screenshot was captured in this session, so before and after are identical.</p>' : ''}
            </section>`
-        : '';
+            : `<section class="screenshot-section" aria-label="Screenshot status">
+            <h2>Screenshots used during this chat session</h2>
+            <p>No analyzed screenshot was available for this session export.</p>
+           </section>`;
 
     const inlineStyles = `
             :root { --primary-color: #f4c653; --secondary-color: #BEDAFF; --background-color: #02031a; }
@@ -2042,6 +2098,9 @@ async function sendMessage() {
         if (typeof chatInput._resetCommandState === 'function') {
             chatInput._resetCommandState();
         }
+        resetSessionScreenshotState();
+        cachedContext = null;
+        currentPageUrl = null;
         // Clear from storage
         await clearChatHistory();
         // Announce for screen readers
@@ -2143,6 +2202,7 @@ async function sendMessage() {
 
     try {
         const response = await processUserInput(userInput);
+        updateSessionScreenshotState(cachedContext);
         loadingDiv.remove();
 
         const responseDiv = document.createElement('div');
