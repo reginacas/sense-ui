@@ -157,6 +157,8 @@ This project is built for blind and visually impaired developers, and their feed
 
 If you decide to participate and become part of the research study, you can read about how your personal data will be handled here: [Data protection](DATA_PROTECTION.md)
 
+For Chrome Web Store users, the extension privacy policy is available here: [Privacy Policy](PRIVACY_POLICY.md)
+
 You can choose to remain anonymous, or if you are comfortable sharing your name, I would be happy to aknowledgement and credit your contributions in any published papers that come out of this project.
 
 To read more details, visit the [Contributing page](CONTRIBUTING.MD)
