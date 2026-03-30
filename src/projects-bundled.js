@@ -134,6 +134,263 @@ async function setActiveProject(project) {
 // ============================================================================
 
 let projectToDelete = null;
+let projectsPendingExport = [];
+let pendingImportMode = 'merge';
+
+function generateProjectId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeProject(rawProject) {
+    if (!rawProject || typeof rawProject !== 'object') return null;
+
+    const name = String(rawProject.name || '').trim();
+    if (!name) return null;
+
+    return {
+        id: generateProjectId(),
+        name,
+        aesthetic: String(rawProject.aesthetic || '').trim(),
+        purpose: String(rawProject.purpose || '').trim(),
+        createdAt: new Date().toISOString(),
+    };
+}
+
+function extractImportedProjects(parsed) {
+    if (Array.isArray(parsed)) return parsed;
+    if (
+        parsed &&
+        typeof parsed === 'object' &&
+        Array.isArray(parsed.projects)
+    ) {
+        return parsed.projects;
+    }
+    return null;
+}
+
+function downloadJsonFile(data, filename) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+}
+
+function getProjectsExportFilename() {
+    const date = new Date().toISOString().slice(0, 10);
+    return `senseui-projects-${date}.json`;
+}
+
+function getSelectedProjectsForExport() {
+    if (projectsPendingExport.length <= 1) return [...projectsPendingExport];
+
+    const selectedIds = new Set(
+        Array.from(
+            document.querySelectorAll(
+                'input[name="export-project-selection"]:checked',
+            ),
+        ).map((input) => input.value),
+    );
+
+    return projectsPendingExport.filter((project) =>
+        selectedIds.has(project.id),
+    );
+}
+
+function closeExportProjectsDialog() {
+    const dialog = document.getElementById('export-projects-dialog');
+    if (dialog) {
+        dialog.close();
+    }
+    projectsPendingExport = [];
+}
+
+function closeImportProjectsDialog() {
+    const dialog = document.getElementById('import-projects-dialog');
+    if (dialog) {
+        dialog.close();
+    }
+}
+
+async function openExportProjectsDialog() {
+    const projects = await getAllProjects();
+    if (projects.length === 0) {
+        announceToScreenReader('There are no projects to export.');
+        return;
+    }
+
+    projectsPendingExport = [...projects].sort((a, b) =>
+        a.name.localeCompare(b.name),
+    );
+
+    const dialog = document.getElementById('export-projects-dialog');
+    const dialogText = document.getElementById('export-projects-dialog-text');
+    const fieldset = document.getElementById('export-projects-fieldset');
+    const checkboxList = document.getElementById(
+        'export-projects-checkbox-list',
+    );
+
+    if (!dialog || !dialogText || !fieldset || !checkboxList) {
+        announceToScreenReader('Unable to open export dialog.');
+        return;
+    }
+
+    checkboxList.innerHTML = '';
+
+    if (projectsPendingExport.length > 1) {
+        dialogText.textContent = 'Select the projects you want to export.';
+        fieldset.style.display = '';
+
+        projectsPendingExport.forEach((project) => {
+            const wrapper = document.createElement('div');
+
+            const label = document.createElement('label');
+            label.setAttribute('for', `export-project-${project.id}`);
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `export-project-${project.id}`;
+            checkbox.name = 'export-project-selection';
+            checkbox.value = project.id;
+            checkbox.checked = true;
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(` ${project.name}`));
+            wrapper.appendChild(label);
+            checkboxList.appendChild(wrapper);
+        });
+    } else {
+        const onlyProject = projectsPendingExport[0];
+        dialogText.textContent = `Export project "${onlyProject.name}"?`;
+        fieldset.style.display = 'none';
+    }
+
+    dialog.showModal();
+    setTimeout(() => dialogText.focus(), 100);
+}
+
+function confirmExportProjects() {
+    if (!projectsPendingExport.length) {
+        closeExportProjectsDialog();
+        return;
+    }
+
+    const selectedProjects = getSelectedProjectsForExport();
+    if (selectedProjects.length === 0) {
+        announceToScreenReader('Select at least one project to export.');
+        return;
+    }
+
+    const exportPayload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        projects: selectedProjects,
+    };
+
+    downloadJsonFile(
+        JSON.stringify(exportPayload, null, 2),
+        getProjectsExportFilename(),
+    );
+    announceToScreenReader(
+        `${selectedProjects.length} project${selectedProjects.length === 1 ? '' : 's'} exported successfully.`,
+    );
+    closeExportProjectsDialog();
+}
+
+function openImportProjectsDialog() {
+    const dialog = document.getElementById('import-projects-dialog');
+    const dialogText = document.getElementById('import-projects-dialog-text');
+    if (!dialog || !dialogText) {
+        announceToScreenReader('Unable to open import dialog.');
+        return;
+    }
+
+    dialog.showModal();
+    setTimeout(() => dialogText.focus(), 100);
+}
+
+function confirmImportProjectsMode() {
+    const selectedMode = document.querySelector(
+        'input[name="import-mode"]:checked',
+    );
+    pendingImportMode = selectedMode?.value === 'replace' ? 'replace' : 'merge';
+
+    closeImportProjectsDialog();
+
+    const importInput = document.getElementById('import-projects-input');
+    if (!importInput) {
+        announceToScreenReader('Import input is unavailable.');
+        return;
+    }
+    importInput.value = '';
+    importInput.click();
+}
+
+async function handleProjectsImportFileChange(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const importedRawProjects = extractImportedProjects(parsed);
+
+        if (!importedRawProjects) {
+            announceToScreenReader(
+                'Invalid file format. Expected a projects array.',
+            );
+            return;
+        }
+
+        const importedProjects = importedRawProjects
+            .map(normalizeProject)
+            .filter(Boolean);
+
+        if (importedProjects.length === 0) {
+            announceToScreenReader(
+                'No valid projects found in the selected file.',
+            );
+            return;
+        }
+
+        if (pendingImportMode === 'replace') {
+            await chrome.storage.local.set({
+                [STORAGE_KEYS.PROJECTS]: importedProjects,
+            });
+            await setActiveProject(importedProjects[0] || null);
+            announceToScreenReader(
+                `${importedProjects.length} project${importedProjects.length === 1 ? '' : 's'} imported and existing projects replaced.`,
+            );
+        } else {
+            const existingProjects = await getAllProjects();
+            const mergedProjects = [...existingProjects, ...importedProjects];
+            await chrome.storage.local.set({
+                [STORAGE_KEYS.PROJECTS]: mergedProjects,
+            });
+            announceToScreenReader(
+                `${importedProjects.length} project${importedProjects.length === 1 ? '' : 's'} imported and added to your current projects.`,
+            );
+        }
+
+        await renderProjectsList();
+        resetForm();
+    } catch (error) {
+        console.error('Error importing projects:', error);
+        announceToScreenReader(
+            `Error importing projects: ${error.message}. Please try again.`,
+        );
+    } finally {
+        const importInput = document.getElementById('import-projects-input');
+        if (importInput) {
+            importInput.value = '';
+        }
+        pendingImportMode = 'merge';
+    }
+}
 
 /**
  * Render the list of projects
@@ -254,7 +511,14 @@ function cancelEdit() {
  * Reset the project form
  */
 function resetForm() {
+    const stayOnPageCheckbox = document.getElementById('stay-on-page');
+    const keepStayOnPageChecked = !!stayOnPageCheckbox?.checked;
+
     document.getElementById('project-form').reset();
+
+    if (stayOnPageCheckbox) {
+        stayOnPageCheckbox.checked = keepStayOnPageChecked;
+    }
     document.getElementById('edit-project-id').value = '';
     document.getElementById('project-form-heading').textContent =
         'Create New Project';
@@ -374,10 +638,12 @@ async function handleFormSubmit(event) {
 function announceToScreenReader(message) {
     const status = document.getElementById('project-status');
     status.textContent = message;
+    status.classList.remove('visually-hidden');
 
     // Clear after a delay
     setTimeout(() => {
         status.textContent = '';
+        status.classList.add('visually-hidden');
     }, 3000);
 }
 
@@ -1024,9 +1290,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     document
         .getElementById('cancel-delete')
         .addEventListener('click', cancelDelete);
+    document
+        .getElementById('export-projects-btn')
+        .addEventListener('click', openExportProjectsDialog);
+    document
+        .getElementById('confirm-export-projects')
+        .addEventListener('click', confirmExportProjects);
+    document
+        .getElementById('cancel-export-projects')
+        .addEventListener('click', closeExportProjectsDialog);
+    document
+        .getElementById('import-projects-btn')
+        .addEventListener('click', openImportProjectsDialog);
+    document
+        .getElementById('confirm-import-projects')
+        .addEventListener('click', confirmImportProjectsMode);
+    document
+        .getElementById('cancel-import-projects')
+        .addEventListener('click', closeImportProjectsDialog);
+    document
+        .getElementById('import-projects-input')
+        .addEventListener('change', handleProjectsImportFileChange);
 
     // Close dialog on ESC key
     document
         .getElementById('delete-dialog')
         .addEventListener('cancel', cancelDelete);
+    document
+        .getElementById('export-projects-dialog')
+        .addEventListener('cancel', closeExportProjectsDialog);
+    document
+        .getElementById('import-projects-dialog')
+        .addEventListener('cancel', closeImportProjectsDialog);
 });
