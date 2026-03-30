@@ -242,6 +242,12 @@ const geminiModelDesc = document.getElementById('gemini-model-desc');
 const geminiCombobox = document.getElementById('gemini-combobox');
 const modelSection = document.getElementById('model-customization-section');
 const aiKeyInstructions = document.getElementById('ai-key-instructions');
+const exportSettingsBtn = document.getElementById('export-settings');
+const exportSettingsNoKeysBtn = document.getElementById(
+    'export-settings-no-keys',
+);
+const importSettingsBtn = document.getElementById('import-settings');
+const importSettingsInput = document.getElementById('import-settings-file');
 
 let hasOpenAIKeyConfigured = false;
 let hasGeminiKeyConfigured = false;
@@ -334,6 +340,150 @@ function showStatus(message, isError = false) {
         statusDiv.classList.remove('visually-hidden');
         setTimeout(() => statusDiv.classList.add('visually-hidden'), 5000);
     }
+}
+
+async function handleSuccessfulSave() {
+    openaiKeyInput.value = '';
+    geminiKeyInput.value = '';
+
+    await updateApiKeyStatus();
+    showStatus('Settings saved successfully!');
+
+    const stayOnPage = document.getElementById('stay-on-page')?.checked;
+    if (!stayOnPage) {
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 500);
+    }
+
+    return stayOnPage;
+}
+
+function getExportableSettings(settings) {
+    const exportable = { ...settings };
+    delete exportable.hasOpenAIKey;
+    delete exportable.hasGeminiKey;
+    return exportable;
+}
+
+function normalizeImportedSettings(rawSettings) {
+    if (!rawSettings || typeof rawSettings !== 'object') {
+        throw new Error('Imported file must contain a JSON object.');
+    }
+
+    const defaults = getDefaultSettings();
+    const normalized = {
+        ...defaults,
+        contextInstructions:
+            typeof rawSettings.contextInstructions === 'string'
+                ? rawSettings.contextInstructions
+                : defaults.contextInstructions,
+        selectedProvider:
+            rawSettings.selectedProvider === 'gemini' ? 'gemini' : 'openai',
+        screenshotMode:
+            rawSettings.screenshotMode === 'viewport' ? 'viewport' : 'fullpage',
+        openaiModel:
+            typeof rawSettings.openaiModel === 'string'
+                ? rawSettings.openaiModel
+                : defaults.openaiModel,
+        geminiModel:
+            typeof rawSettings.geminiModel === 'string'
+                ? rawSettings.geminiModel
+                : defaults.geminiModel,
+        showButtons: Boolean(rawSettings.showButtons),
+    };
+
+    if (typeof rawSettings.openaiApiKey === 'string') {
+        normalized.openaiApiKey = rawSettings.openaiApiKey.trim();
+    }
+    if (typeof rawSettings.geminiApiKey === 'string') {
+        normalized.geminiApiKey = rawSettings.geminiApiKey.trim();
+    }
+
+    return normalized;
+}
+
+function downloadJsonFile(data, filename) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+}
+
+function getSettingsExportFilename(includeApiKeys) {
+    const date = new Date().toISOString().slice(0, 10);
+    return includeApiKeys
+        ? `senseui-settings-${date}.json`
+        : `senseui-settings-no-keys-${date}.json`;
+}
+
+async function exportSettingsToFile(includeApiKeys) {
+    const settings = await loadSettings();
+    const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        settings: getExportableSettings(settings),
+    };
+
+    if (includeApiKeys) {
+        const openaiApiKey = await retrieveApiKey(STORAGE_KEYS.OPENAI_API_KEY);
+        const geminiApiKey = await retrieveApiKey(STORAGE_KEYS.GEMINI_API_KEY);
+        if (openaiApiKey) payload.settings.openaiApiKey = openaiApiKey;
+        if (geminiApiKey) payload.settings.geminiApiKey = geminiApiKey;
+    }
+
+    downloadJsonFile(
+        JSON.stringify(payload, null, 2),
+        getSettingsExportFilename(includeApiKeys),
+    );
+    showStatus('Settings exported successfully!');
+}
+
+async function handleImportFileChange(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    try {
+        const fileContent = await file.text();
+        const parsed = JSON.parse(fileContent);
+        const rawSettings =
+            parsed && typeof parsed === 'object' && parsed.settings
+                ? parsed.settings
+                : parsed;
+        const normalizedSettings = normalizeImportedSettings(rawSettings);
+        const validation = validateSettings(normalizedSettings);
+
+        if (!validation.valid) {
+            showStatus(
+                `Validation errors: ${validation.errors.join(', ')}`,
+                true,
+            );
+            return;
+        }
+
+        await saveSettings(normalizedSettings);
+        const stayOnPage = await handleSuccessfulSave();
+
+        if (stayOnPage) {
+            await loadCurrentSettings();
+        }
+    } catch (error) {
+        console.error('Error importing settings:', error);
+        showStatus(`Failed to import settings: ${error.message}`, true);
+    } finally {
+        if (importSettingsInput) {
+            importSettingsInput.value = '';
+        }
+    }
+}
+
+function triggerImportFilePicker() {
+    importSettingsInput?.click();
 }
 
 async function updateApiKeyStatus() {
@@ -465,19 +615,7 @@ async function handleSubmit(event) {
 
         await saveSettings(settings);
 
-        openaiKeyInput.value = '';
-        geminiKeyInput.value = '';
-
-        await updateApiKeyStatus();
-        showStatus('Settings saved successfully!');
-
-        const stayOnPage = document.getElementById('stay-on-page')?.checked;
-        if (!stayOnPage) {
-            // Navigate back to chat page and focus on input
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 500); // Small delay to show success message
-        }
+        await handleSuccessfulSave();
     } catch (error) {
         console.error('Error saving settings:', error);
         showStatus(`Failed to save settings: ${error.message}`, true);
@@ -532,6 +670,70 @@ if (shortcutsBtn) {
     shortcutsBtn.addEventListener('click', () => {
         chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
     });
+}
+
+if (exportSettingsBtn) {
+    exportSettingsBtn.addEventListener('click', () => {
+        const exportWarningDialog = document.getElementById(
+            'export-keys-warning-dialog',
+        );
+        if (exportWarningDialog) {
+            exportWarningDialog.showModal();
+            return;
+        }
+
+        showStatus('Export warning dialog unavailable.', true);
+    });
+}
+
+if (exportSettingsNoKeysBtn) {
+    exportSettingsNoKeysBtn.addEventListener('click', async () => {
+        try {
+            await exportSettingsToFile(false);
+        } catch (error) {
+            console.error('Error exporting settings without keys:', error);
+            showStatus(`Failed to export settings: ${error.message}`, true);
+        }
+    });
+}
+
+if (importSettingsBtn) {
+    importSettingsBtn.addEventListener('click', triggerImportFilePicker);
+}
+
+if (importSettingsInput) {
+    importSettingsInput.addEventListener('change', handleImportFileChange);
+}
+
+const exportWarningDialog = document.getElementById(
+    'export-keys-warning-dialog',
+);
+const confirmExportKeysBtn = document.getElementById(
+    'confirm-export-keys-action',
+);
+const cancelExportKeysBtn = document.getElementById(
+    'cancel-export-keys-action',
+);
+
+if (exportWarningDialog) {
+    if (confirmExportKeysBtn) {
+        confirmExportKeysBtn.addEventListener('click', async () => {
+            try {
+                await exportSettingsToFile(true);
+                exportWarningDialog.close();
+            } catch (error) {
+                console.error('Error exporting settings:', error);
+                showStatus(`Failed to export settings: ${error.message}`, true);
+            }
+        });
+    }
+
+    if (cancelExportKeysBtn) {
+        cancelExportKeysBtn.addEventListener('click', () => {
+            exportWarningDialog.close();
+            showStatus('Export cancelled.');
+        });
+    }
 }
 
 // Add event listener for reset settings button

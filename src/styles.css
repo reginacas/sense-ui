@@ -315,7 +315,7 @@ footer .btn-tertiary {
 }
 
 /* Dialog Styles */
-#reset-warning-dialog {
+dialog {
     background-color: var(--background-color);
     color: white;
     border: 1px solid var(--secondary-color);
@@ -324,21 +324,21 @@ footer .btn-tertiary {
     max-width: 400px;
 }
 
-#reset-warning-dialog::backdrop {
+dialog::backdrop {
     background: rgba(0, 0, 0, 0.7);
 }
 
-#reset-warning-dialog h3 {
+dialog h3 {
     margin-top: 0;
     color: var(--primary-color);
 }
 
-#reset-warning-dialog p[tabindex='0']:focus {
+dialog p[tabindex='0']:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
-#reset-warning-dialog .dialog-actions {
+dialog .dialog-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -446,36 +446,6 @@ summary h2 {
 
 .project-actions button {
     min-width: 80px;
-}
-
-#delete-dialog {
-    background-color: var(--background-color);
-    color: white;
-    border: 1px solid var(--secondary-color);
-    border-radius: 8px;
-    padding: 20px;
-    max-width: 400px;
-}
-
-#delete-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.7);
-}
-
-#delete-dialog h3 {
-    margin-top: 0;
-    color: var(--primary-color);
-}
-
-#delete-dialog p[tabindex='0']:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
-#delete-dialog .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
 }
 
 .hint {

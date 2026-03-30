@@ -430,7 +430,79 @@
                     <br />
                 </details>
                 <!-- End Keyboard Shortcuts Section -->
-
+                <!-- Export Settings Section -->
+                <details name="settings" class="settings-section">
+                    <summary>
+                        <h2>Export settings</h2>
+                    </summary>
+                    <p>
+                        You can export your current settings (except shortcuts)
+                        to a JSON file. This is useful for backup or transferring
+                        settings to another browser or device. Click the button
+                        below to download the file.
+                    </p>
+                    <button
+                        type="button"
+                        id="export-settings"
+                        class="btn-secondary"
+                    >
+                        Export Settings
+                    </button>
+                    <button
+                        type="button"
+                        id="export-settings-no-keys"
+                        class="btn-secondary"
+                        style="margin-top: 0.5rem;"
+                    >
+                        Export Settings without API Keys
+                    </button>
+                 </details>
+                    <!-- End Export Settings Section -->
+                <details>
+                    <summary>
+                        <h2>Import settings</h2>
+                    </summary>
+                    <p>
+                        You can import settings from a JSON file exported from
+                        this page. This will overwrite your current settings
+                        (except shortcuts) with the values from the file. Click
+                        the button below to select a file to import.
+                    </p>
+                    <button
+                        type="button"
+                        id="import-settings"
+                        class="btn-secondary"
+                    >
+                        Import Settings
+                    </button>
+                    <input
+                        type="file"
+                        id="import-settings-file"
+                        accept="application/json,.json"
+                        style="display: none"
+                    />
+                </details>
+                <dialog id="export-keys-warning-dialog">
+                    <h3>Warning</h3>
+                    <p tabindex="0">
+                        This export includes your API keys in plain text. Keep
+                        this file secure and do not share it publicly.
+                    </p>
+                    <button
+                        type="button"
+                        id="cancel-export-keys-action"
+                        class="btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-export-keys-action"
+                        class="btn-primary"
+                    >
+                        Continue Export
+                    </button>
+                </dialog>
                 <dialog id="reset-warning-dialog">
                     <h3>Warning</h3>
                     <p tabindex="0">
@@ -454,7 +526,7 @@
                         Confirm
                     </button>
                 </dialog>
-                <div class="stay-on-page-option">
+                <div class="stay-on-page-option" style="margin-top: 1rem;">
                     <input
                         type="checkbox"
                         id="stay-on-page"
