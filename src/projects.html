@@ -9,7 +9,7 @@
 
     <body>
         <!-- Skip link for keyboard/screen-reader users -->
-        <a href="#main" class="skip-link">Skip to main content</a>
+        <a href="#project-form-heading" class="skip-link">Skip to main content</a>
         <header>
             <h1 class="sr-only">Sense UI</h1>
             <nav>
@@ -257,6 +257,19 @@
                 </form>
             </section>
 
+            <!-- Import/Export Projects -->
+            <section id="import-export-projects">
+                <h2>Import/Export Projects</h2>
+                <p>Import or export your projects as needed so you can share them with others or back them up.</p>
+                <button type="button" id="export-projects-btn" class="btn-secondary">
+                    Export Projects
+                </button>
+                <input type="file" id="import-projects-input" accept=".json" style="display: none" />
+                <button type="button" id="import-projects-btn" class="btn-secondary">
+                    Import Projects
+                </button>
+            </section>
+
             <!-- Delete Confirmation Dialog -->
             <dialog id="delete-dialog">
                 <h3>Delete Project?</h3>
@@ -270,6 +283,79 @@
                 <button type="button" id="confirm-delete" class="btn-primary">
                     Delete
                 </button>
+            </dialog>
+
+            <dialog id="export-projects-dialog">
+                <h3>Export Projects</h3>
+                <p tabindex="0" id="export-projects-dialog-text">
+                    Choose which projects to export.
+                </p>
+                <fieldset id="export-projects-fieldset">
+                    <legend>Select projects</legend>
+                    <div id="export-projects-checkbox-list"></div>
+                </fieldset>
+                <div class="dialog-actions">
+                    <button
+                        type="button"
+                        id="cancel-export-projects"
+                        class="btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-export-projects"
+                        class="btn-primary"
+                    >
+                        Export
+                    </button>
+                </div>
+            </dialog>
+
+            <dialog id="import-projects-dialog">
+                <h3>Import Projects</h3>
+                <p tabindex="0" id="import-projects-dialog-text">
+                    Choose how imported projects should be applied.
+                </p>
+                <fieldset>
+                    <legend>Import mode</legend>
+                    <label for="import-mode-merge">
+                        <input
+                            type="radio"
+                            id="import-mode-merge"
+                            name="import-mode"
+                            value="merge"
+                            checked
+                        />
+                        Add imported projects and keep my current projects
+                    </label>
+                    <br />
+                    <label for="import-mode-replace">
+                        <input
+                            type="radio"
+                            id="import-mode-replace"
+                            name="import-mode"
+                            value="replace"
+                        />
+                        Replace all my current projects with imported projects
+                    </label>
+                </fieldset>
+                <div class="dialog-actions">
+                    <button
+                        type="button"
+                        id="cancel-import-projects"
+                        class="btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-import-projects"
+                        class="btn-primary"
+                    >
+                        Continue
+                    </button>
+                </div>
             </dialog>
         </main>
 
