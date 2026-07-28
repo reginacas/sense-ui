@@ -4,7 +4,7 @@
 
 SenseUI is an open-source Chromium extension that gives blind and low-vision web developers real-time, actionable feedback on their web designs. Get visual descriptions of your pages and receive design recommendations without relying on sighted colleagues or generic AI tools that lack context on your website and deliver vague, unhelpful feedback for blind devs. I'm making this project as part of my master's thesis in Human-Computer Interaction, but this repository will not be deleted or closed after the completion of my degree. It will remain open-source and everyone is free to fork it, change it, adapt and use freely.
 
-Available on Chrome Web Store: (https://chromewebstore.google.com/detail/senseui/nolkkggkcmpjejlobeljmffhcmbaeflk?hl=en)
+Available on Chrome Web Store: https://chromewebstore.google.com/detail/senseui/nolkkggkcmpjejlobeljmffhcmbaeflk?hl=en
 
 ---
 
@@ -12,11 +12,11 @@ Available on Chrome Web Store: (https://chromewebstore.google.com/detail/senseui
 
 1. [Planned Features](#planned-features)
 2. [How to Contribute](#how-to-contribute)
-4. [Installation](#installation)
-5. [Documentation](#documentation)
-6. [Project Background](#project-background)
-7. [License](#license)
-8. [Contact](#contact)
+3. [Installation](#installation)
+4. [Documentation](#documentation)
+5. [Project Background](#project-background)
+6. [License](#license)
+7. [Contact](#contact)
 
 ---
 
@@ -95,11 +95,7 @@ This project is built for blind and visually impaired developers, and their feed
 
 ### Data Protection
 
-If you decide to participate and become part of the research study, you can read about how your personal data will be handled here: [Data protection](DATA_PROTECTION.md)
-
 For Chrome Web Store users, the extension privacy policy is available here: [Privacy Policy](PRIVACY_POLICY.md)
-
-You can choose to remain anonymous, or if you are comfortable sharing your name, I would be happy to aknowledgement and credit your contributions in any published papers that come out of this project.
 
 To read more details, visit the [Contributing page](CONTRIBUTING.MD)
 
@@ -141,7 +137,6 @@ All participants agree to follow our Code of Conduct: [Link to Code of Conduct](
 SenseUI started from research on barriers blind and low-vision developers face when working on UI design. Many rely on sighted colleagues, expensive services or vague general-purpose AI tools to verify their work. Due to this, many decide to distance themselves from UI and focus on Back-end roles, limiting their job opportunities.
 
 This project aims to co-design with blind and low-vision volunteers an open-source tool that enables independent work, supports career growth, and creates more inclusive development environments.
-
 
 ---
 
