@@ -4,19 +4,14 @@
 
 SenseUI is an open-source Chromium extension that gives blind and low-vision web developers real-time, actionable feedback on their web designs. Get visual descriptions of your pages and receive design recommendations without relying on sighted colleagues or generic AI tools that lack context on your website and deliver vague, unhelpful feedback for blind devs. I'm making this project as part of my master's thesis in Human-Computer Interaction, but this repository will not be deleted or closed after the completion of my degree. It will remain open-source and everyone is free to fork it, change it, adapt and use freely.
 
-We are actively looking forbBlind and low-vision developers to test and provide feedback. Participation is flexible and optional. You can participate in as many Sprints as you can. For more details go to [How to Contribute](#how-to-contribute)
-
-Current State: Sprint 3
-
-If you would like to join as a tester, please fill out [this form](https://docs.google.com/forms/d/e/1FAIpQLScDW_FCZznz-Nmws8N_mPTWvaSR4sbmvnxJ8kcTWSgy61M8wA/viewform?usp=sharing&ouid=113702676436730582551)
+Available on Chrome Web Store: (https://chromewebstore.google.com/detail/senseui/nolkkggkcmpjejlobeljmffhcmbaeflk?hl=en)
 
 ---
 
 ## Table of Contents
 
 1. [Planned Features](#planned-features)
-2. [Roadmap](#roadmap)
-3. [How to Contribute](#how-to-contribute)
+2. [How to Contribute](#how-to-contribute)
 4. [Installation](#installation)
 5. [Documentation](#documentation)
 6. [Project Background](#project-background)
@@ -86,62 +81,7 @@ If you would like to join as a tester, please fill out [this form](https://docs.
 
 ---
 
-## Roadmap
-
-Disclaimer: The following are my initial guesses and not strict timelines
-
-### Sprint 1: Foundation & Accessibility (until end of October)
-
-The goal for this sprint is to establish the core infrastructure: accessible interface with keyboard navigation, the keyboard shortcut to open the extension, quick prompts and semantic headings to each of the conversation turns for easy navigation. No AI integration at this point yet.
-
-### Sprint 2: Core Functionality and AI integration (Current)
-
-- AI Keys input from the settings page
-- AI-generated responses based on HTML/CSS and screenshots of the active tab
-
-### Sprint 3: Customization (December 9 - Current)
-
-- Fixes to visual description
-- Keyboard shortcut customization
-- Added full-page screenshot instead of just viewport-only, which can be changed on the settings page
-- Reset button for settings page
-- Quick action buttons added to compare against current slash commands
-
-### Sprint 4: Customization (All through January)
-
-- Feedback customization (level of detail and instructions/context)
-- Chat download settings (only favorites or full chat)
-
-### Sprint 5: About page and Nice-to-Haves (Mid or end of February)
-
-- Finish polishing About page and add all necessary documentation
-- Nice-to-have's and newer suggested features (if time allows), edge cases
-
-### Beta launch prediction: End of February of Early March 2026
-
-For detailed progress, visit the [SenseUI GitHub issues page](https://github.com/reginacas/sense-ui/issues)
-
-Look for the issue pinned
-
----
-
 ## How to Contribute
-
-### As a Tester
-
-Testers help us find issues and improve accessibility. Requirements:
-
-- You use a screen reader (NVDA, JAWS, VoiceOver)
-- You have experience or are learning web development
-- You can spend around 30 minutes testing it, every 2 to 3 weeks until the end of February approximately
-
-At the start of each sprint, I create a tracking issue with features to test (labeled "current-sprint") with:
-
-- What features are in this sprint
-- What to look for when testing.
-  You download the Release, test it, and comment on what works and what breaks, suggest improvements, share words of encouragement, etc.
-
-### As a Developer
 
 If your heart desires, you can contribute code, fix bugs, or propose features.
 To find an approachable first issue to fix, you can check the ones with an "easy-fix" label [here](https://github.com/reginacas/sense-ui/issues?q=is%3Aissue%20state%3Aopen%20label%3Aeasy-fix)
@@ -202,7 +142,6 @@ SenseUI started from research on barriers blind and low-vision developers face w
 
 This project aims to co-design with blind and low-vision volunteers an open-source tool that enables independent work, supports career growth, and creates more inclusive development environments.
 
-To learn more about the research and the previous study we did to come up with the concept, see the project wiki: [SenseUI Wiki](https://github.com/reginacas/sense-ui/wiki)
 
 ---
 
