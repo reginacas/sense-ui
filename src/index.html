@@ -28,6 +28,21 @@
                 <!-- Project Selector -->
                 <section class="chat-controls" aria-label="Chat controls">
                     <div
+                        id="persistent-nav-tip"
+                        class="persistent-nav-tip"
+                        role="note"
+                        aria-label="Persistent panel navigation"
+                        hidden
+                    >
+                        <p>
+                            <strong>Persistent Mode:</strong> Press
+                            <kbd>F6</kbd> or <kbd>Shift+F6</kbd> to cycle
+                            between webpage and panel. Press
+                            <kbd id="persistent-close-key">Ctrl+Shift+X</kbd> to
+                            close.
+                        </p>
+                    </div>
+                    <div
                         class="project-selector"
                         aria-labelledby="project-selector-label"
                     >
@@ -72,6 +87,7 @@
                             type="text"
                             list="command-list"
                             autocomplete="off"
+                            autofocus
                         />
                         <datalist id="command-list">
                             <option value="/describe"></option>

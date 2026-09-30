@@ -1780,6 +1780,103 @@ async function warnIfViewportIsSmall(tabId) {
     }
 }
 
+function isPersistentSidePanel() {
+    try {
+        if (
+            window.location.search.includes('panel=sidepanel') ||
+            window.location.search.includes('mode=sidepanel')
+        ) {
+            return true;
+        }
+        if (
+            typeof chrome !== 'undefined' &&
+            chrome.extension &&
+            typeof chrome.extension.getViews === 'function'
+        ) {
+            const popups = chrome.extension.getViews({ type: 'popup' });
+            if (popups && popups.includes(window)) {
+                return false;
+            }
+            const tabs = chrome.extension.getViews({ type: 'tab' });
+            if (tabs && tabs.includes(window)) {
+                return false;
+            }
+            return true;
+        }
+    } catch {
+        // Fallback to false if view detection is unsupported
+    }
+    return false;
+}
+
+function updatePersistentNavTip(isSidePanel) {
+    const tip = document.getElementById('persistent-nav-tip');
+    if (!tip) return;
+
+    if (isSidePanel) {
+        tip.removeAttribute('hidden');
+        const isMac =
+            typeof navigator !== 'undefined' &&
+            /Mac|iPod|iPhone|iPad/.test(
+                navigator.platform || navigator.userAgent,
+            );
+        const closeKeyEl = document.getElementById('persistent-close-key');
+        if (closeKeyEl) {
+            closeKeyEl.textContent = isMac ? 'Command+Shift+X' : 'Ctrl+Shift+X';
+        }
+    } else {
+        tip.setAttribute('hidden', '');
+    }
+}
+
+function focusPanel() {
+    try {
+        window.focus();
+    } catch {
+        // Ignore if window focus cannot be triggered
+    }
+
+    const input = document.getElementById('chat-input');
+    const project = document.getElementById('active-project-select');
+
+    if (window.location.hash === '#active-project-select' && project) {
+        history.replaceState(null, '', window.location.pathname);
+        project.focus();
+    } else if (input) {
+        input.focus();
+    } else {
+        const main = document.getElementById('main') || document.body;
+        if (main) {
+            if (!main.hasAttribute('tabindex')) {
+                main.setAttribute('tabindex', '-1');
+            }
+            main.focus();
+        }
+    }
+}
+
+function scheduleAutofocus() {
+    focusPanel();
+    setTimeout(focusPanel, 50);
+    setTimeout(focusPanel, 150);
+    setTimeout(focusPanel, 300);
+}
+
+function announcePanelOpened(isSidePanel) {
+    const isMac =
+        typeof navigator !== 'undefined' &&
+        /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    const closeShortcut = isMac ? 'Command+Shift+X' : 'Ctrl+Shift+X';
+
+    if (isSidePanel) {
+        announce(
+            `SenseUI persistent side panel opened. Press F6 or Shift+F6 to switch between webpage and panel, or ${closeShortcut} to close.`,
+        );
+    } else {
+        announce('SenseUI opened.');
+    }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
     // Check if this is the first time opening the extension
     const result = await chrome.storage.local.get('senseui_first_time');
@@ -1808,7 +1905,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Load button visibility setting
     await loadButtonVisibilitySetting();
 
-    announce('SenseUI opened.');
+    const isSidePanel = isPersistentSidePanel();
+    updatePersistentNavTip(isSidePanel);
+    announcePanelOpened(isSidePanel);
 
     if (chatInput) {
         if (chatInput.hasAttribute('list')) {
@@ -1818,12 +1917,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         setupEventListeners();
     }
 
-    if (window.location.hash === '#active-project-select' && projectSelect) {
-        history.replaceState(null, '', window.location.pathname);
-        projectSelect.focus();
-    } else if (chatInput) {
-        chatInput.focus();
-    }
+    scheduleAutofocus();
 });
 
 function setupCommandSuggestions() {
@@ -2263,19 +2357,40 @@ async function sendMessage() {
 }
 
 // ============================================================================
-// MESSAGE LISTENERS
+// MESSAGE LISTENERS & FOCUS MANAGEMENT
 // ============================================================================
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'close_side_panel') {
         window.close();
+    } else if (message.action === 'focus_side_panel') {
+        updatePersistentNavTip(true);
+        scheduleAutofocus();
+        const isMac =
+            typeof navigator !== 'undefined' &&
+            /Mac|iPod|iPhone|iPad/.test(
+                navigator.platform || navigator.userAgent,
+            );
+        const closeShortcut = isMac ? 'Command+Shift+X' : 'Ctrl+Shift+X';
+        announce(
+            `SenseUI persistent side panel focused. Press F6 or Shift+F6 to switch between webpage and panel, or ${closeShortcut} to close.`,
+        );
     }
 });
 
 // Auto-focus chat input explicitly for shortcut conveniences (Side Panel & Popup alike)
 document.addEventListener('DOMContentLoaded', () => {
-    const chatInput = document.getElementById('chat-input');
-    if (chatInput) {
-        // Small timeout ensures Chrome has fully rendered the DOM and focus holds
-        setTimeout(() => chatInput.focus(), 100);
+    scheduleAutofocus();
+});
+
+// Ensure chat input is focused whenever the window gains focus (e.g. via F6 / Shift+F6)
+window.addEventListener('focus', () => {
+    if (
+        document.activeElement === document.body ||
+        document.activeElement === document.documentElement
+    ) {
+        const input = document.getElementById('chat-input');
+        if (input) {
+            input.focus();
+        }
     }
 });

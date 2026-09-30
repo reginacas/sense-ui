@@ -1392,3 +1392,12 @@ for (var i = 0; i < comboboxes.length; i++) {
 }
 
 loadCurrentSettings();
+
+// Side panel message listener
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'close_side_panel') {
+        window.close();
+    } else if (message.action === 'focus_side_panel') {
+        window.focus();
+    }
+});

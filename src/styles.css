@@ -211,6 +211,31 @@ summary h3 {
     background-color: var(--background-color);
 }
 
+.persistent-nav-tip {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.persistent-nav-tip p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    line-height: 1.4;
+}
+
+.persistent-nav-tip kbd {
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-family: inherit;
+}
+
 .chat-input-area,
 .buttons-container,
 footer {
