@@ -148,22 +148,28 @@ function normalizeProject(rawProject) {
     if (!name) return null;
 
     return {
-        id: generateProjectId(),
+        id: rawProject.id ? String(rawProject.id) : generateProjectId(),
         name,
+        frameworks: rawProject.frameworks
+            ? String(rawProject.frameworks).trim()
+            : '',
         aesthetic: String(rawProject.aesthetic || '').trim(),
         purpose: String(rawProject.purpose || '').trim(),
-        createdAt: new Date().toISOString(),
+        createdAt: rawProject.createdAt || new Date().toISOString(),
     };
 }
 
 function extractImportedProjects(parsed) {
+    if (!parsed) return null;
     if (Array.isArray(parsed)) return parsed;
-    if (
-        parsed &&
-        typeof parsed === 'object' &&
-        Array.isArray(parsed.projects)
-    ) {
-        return parsed.projects;
+    if (typeof parsed === 'object') {
+        if (Array.isArray(parsed.projects)) return parsed.projects;
+        if (parsed.project && typeof parsed.project === 'object') {
+            return [parsed.project];
+        }
+        if (parsed.name && typeof parsed.name === 'string') {
+            return [parsed];
+        }
     }
     return null;
 }
@@ -367,7 +373,14 @@ async function handleProjectsImportFileChange(event) {
             );
         } else {
             const existingProjects = await getAllProjects();
-            const mergedProjects = [...existingProjects, ...importedProjects];
+            const mergedProjects =
+                typeof mergeProjects === 'function'
+                    ? mergeProjects(
+                          existingProjects,
+                          importedProjects,
+                          generateProjectId,
+                      )
+                    : [...existingProjects, ...importedProjects];
             await chrome.storage.local.set({
                 [STORAGE_KEYS.PROJECTS]: mergedProjects,
             });

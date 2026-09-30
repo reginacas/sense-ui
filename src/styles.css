@@ -294,12 +294,15 @@ footer {
 
 footer {
     display: flex;
-    padding: 0 1rem 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
 }
 
 footer .btn-tertiary {
-    flex: 1;
+    flex: 1 1 calc(50% - 0.5rem);
     text-align: center;
+    box-sizing: border-box;
 }
 
 .sr-only {

@@ -94,19 +94,101 @@
                         type="button"
                         id="download-chat"
                         class="btn-tertiary"
+                        aria-label="Download current chat as HTML file"
                     >
-                        Download current chat
+                        Download chat (HTML)
                     </button>
+                    <button
+                        type="button"
+                        id="export-chat-json"
+                        class="btn-tertiary"
+                        aria-label="Export current chat in JSON format"
+                    >
+                        Export chat (JSON)
+                    </button>
+                    <button
+                        type="button"
+                        id="import-chat-btn"
+                        class="btn-tertiary"
+                        aria-label="Import chat from JSON file"
+                    >
+                        Import chat (JSON)
+                    </button>
+                    <input
+                        type="file"
+                        id="import-chat-input"
+                        accept="application/json,.json"
+                        style="display: none"
+                        aria-hidden="true"
+                    />
                     <a
                         href="https://github.com/reginacas/sense-ui/issues"
                         target="_blank"
                         rel="noopener"
                         class="btn-tertiary"
+                        aria-label="Report issues in GitHub (opens in new tab)"
                         >Report issues in GitHub</a
                     >
                 </footer>
             </section>
+
+            <!-- Import Chat Confirmation Dialog -->
+            <dialog id="import-chat-dialog">
+                <h3>Import Chat</h3>
+                <p tabindex="0" id="import-chat-dialog-text">
+                    Choose how the imported chat should be applied.
+                </p>
+                <fieldset>
+                    <legend>Import mode</legend>
+                    <label for="import-chat-mode-replace">
+                        <input
+                            type="radio"
+                            id="import-chat-mode-replace"
+                            name="import-chat-mode"
+                            value="replace"
+                            checked
+                        />
+                        Replace current chat with imported chat
+                    </label>
+                    <br />
+                    <label for="import-chat-mode-append">
+                        <input
+                            type="radio"
+                            id="import-chat-mode-append"
+                            name="import-chat-mode"
+                            value="append"
+                        />
+                        Append imported chat to current chat
+                    </label>
+                </fieldset>
+                <div class="dialog-actions">
+                    <button
+                        type="button"
+                        id="cancel-import-chat"
+                        class="btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-import-chat"
+                        class="btn-primary"
+                    >
+                        Continue
+                    </button>
+                </div>
+            </dialog>
+
+            <!-- Live region for screen reader announcements -->
+            <div
+                id="chat-status"
+                role="status"
+                aria-live="polite"
+                class="visually-hidden"
+                aria-atomic="true"
+            ></div>
         </main>
+        <script src="export-import-utils.js"></script>
         <script src="script-bundled.js"></script>
     </body>
 </html>
