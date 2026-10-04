@@ -270,19 +270,22 @@
                     type="button"
                     id="export-projects-btn"
                     class="btn-secondary"
+                    aria-label="Export projects in JSON format"
                 >
                     Export Projects
                 </button>
                 <input
                     type="file"
                     id="import-projects-input"
-                    accept=".json"
+                    accept=".json,application/json"
                     style="display: none"
+                    aria-hidden="true"
                 />
                 <button
                     type="button"
                     id="import-projects-btn"
                     class="btn-secondary"
+                    aria-label="Import projects from JSON file"
                 >
                     Import Projects
                 </button>
@@ -377,6 +380,7 @@
             </dialog>
         </main>
 
+        <script src="export-import-utils.js"></script>
         <script src="projects-bundled.js"></script>
     </body>
 </html>

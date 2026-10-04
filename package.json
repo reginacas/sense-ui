@@ -17,6 +17,7 @@
     "scripts": {
         "prepare": "husky install",
         "lint": "eslint . --max-warnings 0",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "test": "node --test tests/*.test.js"
     }
 }

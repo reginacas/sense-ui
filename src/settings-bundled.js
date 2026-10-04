@@ -8,6 +8,9 @@ const STORAGE_KEYS = {
     GEMINI_API_KEY: 'senseui_gemini_key',
     SELECTED_PROVIDER: 'senseui_provider',
     USER_SETTINGS: 'senseui_settings',
+    PROJECTS: 'senseui_projects',
+    ACTIVE_PROJECT: 'senseui_active_project',
+    CHAT_HISTORY: 'senseui_chat_history',
 };
 
 // ============================================================================
@@ -248,6 +251,18 @@ const exportSettingsNoKeysBtn = document.getElementById(
 );
 const importSettingsBtn = document.getElementById('import-settings');
 const importSettingsInput = document.getElementById('import-settings-file');
+const exportDataAllBtn = document.getElementById('export-data-all');
+const exportChatHistorySettingsBtn = document.getElementById(
+    'export-chat-history-settings',
+);
+const exportProjectsSettingsBtn = document.getElementById(
+    'export-projects-settings',
+);
+const importDataBtn = document.getElementById('import-data-btn');
+const importDataFile = document.getElementById('import-data-file');
+const importDataDialog = document.getElementById('import-data-dialog');
+const confirmImportDataBtn = document.getElementById('confirm-import-data');
+const cancelImportDataBtn = document.getElementById('cancel-import-data');
 
 let hasOpenAIKeyConfigured = false;
 let hasGeminiKeyConfigured = false;
@@ -486,6 +501,204 @@ function triggerImportFilePicker() {
     importSettingsInput?.click();
 }
 
+let pendingDataImportMode = 'merge';
+
+async function exportChatsAndProjectsToFile() {
+    const projectsResult = await chrome.storage.local.get(
+        STORAGE_KEYS.PROJECTS,
+    );
+    const activeProjectResult = await chrome.storage.local.get(
+        STORAGE_KEYS.ACTIVE_PROJECT,
+    );
+    const chatResult = await chrome.storage.local.get(
+        STORAGE_KEYS.CHAT_HISTORY,
+    );
+
+    const projects = projectsResult[STORAGE_KEYS.PROJECTS] || [];
+    const activeProject =
+        activeProjectResult[STORAGE_KEYS.ACTIVE_PROJECT] || null;
+    const chatHistory = chatResult[STORAGE_KEYS.CHAT_HISTORY] || '';
+
+    const payload = formatDataExport({
+        projects,
+        activeProject,
+        chat: {
+            chatHistory,
+        },
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    downloadJsonFile(
+        JSON.stringify(payload, null, 2),
+        `senseui-data-${date}.json`,
+    );
+    showStatus('Chats and projects exported successfully!');
+}
+
+async function exportChatHistoryToFile() {
+    const chatResult = await chrome.storage.local.get(
+        STORAGE_KEYS.CHAT_HISTORY,
+    );
+    const activeProjectResult = await chrome.storage.local.get(
+        STORAGE_KEYS.ACTIVE_PROJECT,
+    );
+
+    const chatHistory = chatResult[STORAGE_KEYS.CHAT_HISTORY] || '';
+    if (!chatHistory || !chatHistory.trim()) {
+        showStatus('No chat history to export.', true);
+        return;
+    }
+
+    const payload = formatChatExport({
+        project: activeProjectResult[STORAGE_KEYS.ACTIVE_PROJECT] || null,
+        chatHistory,
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    downloadJsonFile(
+        JSON.stringify(payload, null, 2),
+        `senseui-chat-${date}.json`,
+    );
+    showStatus('Chat history exported successfully!');
+}
+
+async function exportProjectsToFile() {
+    const projectsResult = await chrome.storage.local.get(
+        STORAGE_KEYS.PROJECTS,
+    );
+    const projects = projectsResult[STORAGE_KEYS.PROJECTS] || [];
+
+    if (!projects || projects.length === 0) {
+        showStatus('No projects to export.', true);
+        return;
+    }
+
+    const payload = formatProjectsExport(projects);
+    const date = new Date().toISOString().slice(0, 10);
+    downloadJsonFile(
+        JSON.stringify(payload, null, 2),
+        `senseui-projects-${date}.json`,
+    );
+    showStatus('Projects exported successfully!');
+}
+
+function openImportDataDialog() {
+    if (!importDataDialog) return;
+    importDataDialog.showModal();
+    const dialogText = document.getElementById('import-data-dialog-text');
+    if (dialogText) {
+        setTimeout(() => dialogText.focus(), 100);
+    }
+}
+
+function closeImportDataDialog() {
+    if (importDataDialog && importDataDialog.open) {
+        importDataDialog.close();
+    }
+}
+
+function confirmImportDataMode() {
+    const selectedMode = document.querySelector(
+        'input[name="import-data-mode"]:checked',
+    );
+    pendingDataImportMode =
+        selectedMode?.value === 'replace' ? 'replace' : 'merge';
+
+    closeImportDataDialog();
+
+    if (importDataFile) {
+        importDataFile.value = '';
+        importDataFile.click();
+    }
+}
+
+async function handleDataImportFileChange(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    try {
+        const fileContent = await file.text();
+        let parsed = null;
+        try {
+            parsed = JSON.parse(fileContent);
+        } catch {
+            showStatus('Error importing data: Invalid JSON file.', true);
+            return;
+        }
+
+        const importData = validateAndExtractImportData(parsed);
+        if (!importData.isValid) {
+            showStatus(
+                importData.error ||
+                    'Invalid file format. No chat or project data found.',
+                true,
+            );
+            return;
+        }
+
+        const updates = {};
+        const messages = [];
+
+        if (importData.hasProjects) {
+            if (pendingDataImportMode === 'replace') {
+                updates[STORAGE_KEYS.PROJECTS] = importData.projects;
+                if (importData.projects[0]) {
+                    updates[STORAGE_KEYS.ACTIVE_PROJECT] =
+                        importData.projects[0];
+                }
+                messages.push(
+                    `${importData.projects.length} project${importData.projects.length === 1 ? '' : 's'} imported (replaced existing)`,
+                );
+            } else {
+                const currentProjectsResult = await chrome.storage.local.get(
+                    STORAGE_KEYS.PROJECTS,
+                );
+                const currentProjects =
+                    currentProjectsResult[STORAGE_KEYS.PROJECTS] || [];
+                const merged = mergeProjects(
+                    currentProjects,
+                    importData.projects,
+                );
+                updates[STORAGE_KEYS.PROJECTS] = merged;
+                messages.push(
+                    `${importData.projects.length} project${importData.projects.length === 1 ? '' : 's'} merged with existing`,
+                );
+            }
+        }
+
+        if (importData.activeProject && pendingDataImportMode !== 'replace') {
+            updates[STORAGE_KEYS.ACTIVE_PROJECT] = importData.activeProject;
+        }
+
+        if (importData.hasChat) {
+            if (pendingDataImportMode === 'replace') {
+                updates[STORAGE_KEYS.CHAT_HISTORY] = importData.chatHistory;
+                messages.push('chat history replaced');
+            } else {
+                const currentChatResult = await chrome.storage.local.get(
+                    STORAGE_KEYS.CHAT_HISTORY,
+                );
+                const currentChat =
+                    currentChatResult[STORAGE_KEYS.CHAT_HISTORY] || '';
+                updates[STORAGE_KEYS.CHAT_HISTORY] =
+                    currentChat + importData.chatHistory;
+                messages.push('chat history appended');
+            }
+        }
+
+        await chrome.storage.local.set(updates);
+        showStatus(`Data imported successfully: ${messages.join(', ')}.`);
+    } catch (error) {
+        console.error('Error importing data:', error);
+        showStatus(`Error importing data: ${error.message}`, true);
+    } finally {
+        if (importDataFile) {
+            importDataFile.value = '';
+        }
+        pendingDataImportMode = 'merge';
+    }
+}
+
 async function updateApiKeyStatus() {
     const status = await getApiKeyStatus();
 
@@ -703,6 +916,41 @@ if (importSettingsBtn) {
 
 if (importSettingsInput) {
     importSettingsInput.addEventListener('change', handleImportFileChange);
+}
+
+if (exportDataAllBtn) {
+    exportDataAllBtn.addEventListener('click', exportChatsAndProjectsToFile);
+}
+
+if (exportChatHistorySettingsBtn) {
+    exportChatHistorySettingsBtn.addEventListener(
+        'click',
+        exportChatHistoryToFile,
+    );
+}
+
+if (exportProjectsSettingsBtn) {
+    exportProjectsSettingsBtn.addEventListener('click', exportProjectsToFile);
+}
+
+if (importDataBtn) {
+    importDataBtn.addEventListener('click', openImportDataDialog);
+}
+
+if (confirmImportDataBtn) {
+    confirmImportDataBtn.addEventListener('click', confirmImportDataMode);
+}
+
+if (cancelImportDataBtn) {
+    cancelImportDataBtn.addEventListener('click', closeImportDataDialog);
+}
+
+if (importDataDialog) {
+    importDataDialog.addEventListener('cancel', closeImportDataDialog);
+}
+
+if (importDataFile) {
+    importDataFile.addEventListener('change', handleDataImportFileChange);
 }
 
 const exportWarningDialog = document.getElementById(

@@ -493,6 +493,107 @@
                         style="display: none"
                     />
                 </details>
+                <!-- Export and Import Data (Chats & Projects) -->
+                <details name="settings" class="settings-section">
+                    <summary>
+                        <h2>Export and import chats and projects</h2>
+                    </summary>
+                    <p>
+                        Export or import your chats and projects in JSON format.
+                        This allows you to share project contexts and
+                        conversation histories with colleagues or back them up.
+                    </p>
+                    <button
+                        type="button"
+                        id="export-data-all"
+                        class="btn-secondary"
+                        aria-label="Export chats and projects in JSON format"
+                    >
+                        Export Chats and Projects (JSON)
+                    </button>
+                    <br />
+                    <button
+                        type="button"
+                        id="export-chat-history-settings"
+                        class="btn-secondary"
+                        style="margin-top: 0.5rem"
+                        aria-label="Export chat history in JSON format"
+                    >
+                        Export Chat History (JSON)
+                    </button>
+                    <br />
+                    <button
+                        type="button"
+                        id="export-projects-settings"
+                        class="btn-secondary"
+                        style="margin-top: 0.5rem"
+                        aria-label="Export projects in JSON format"
+                    >
+                        Export Projects (JSON)
+                    </button>
+                    <br />
+                    <button
+                        type="button"
+                        id="import-data-btn"
+                        class="btn-secondary"
+                        style="margin-top: 0.5rem"
+                        aria-label="Import chats and projects from JSON file"
+                    >
+                        Import Chats and Projects (JSON)
+                    </button>
+                    <input
+                        type="file"
+                        id="import-data-file"
+                        accept="application/json,.json"
+                        style="display: none"
+                        aria-hidden="true"
+                    />
+                </details>
+                <dialog id="import-data-dialog">
+                    <h3>Import Chats and Projects</h3>
+                    <p tabindex="0" id="import-data-dialog-text">
+                        Choose how imported data should be applied.
+                    </p>
+                    <fieldset>
+                        <legend>Import mode</legend>
+                        <label for="import-data-mode-merge">
+                            <input
+                                type="radio"
+                                id="import-data-mode-merge"
+                                name="import-data-mode"
+                                value="merge"
+                                checked
+                            />
+                            Merge with existing projects and append chat history
+                        </label>
+                        <br />
+                        <label for="import-data-mode-replace">
+                            <input
+                                type="radio"
+                                id="import-data-mode-replace"
+                                name="import-data-mode"
+                                value="replace"
+                            />
+                            Replace existing projects and chat history
+                        </label>
+                    </fieldset>
+                    <div class="dialog-actions">
+                        <button
+                            type="button"
+                            id="cancel-import-data"
+                            class="btn-secondary"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            id="confirm-import-data"
+                            class="btn-primary"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </dialog>
                 <dialog id="export-keys-warning-dialog">
                     <h3>Warning</h3>
                     <p tabindex="0">
@@ -567,6 +668,7 @@
                 ></div>
             </form>
         </main>
+        <script src="export-import-utils.js"></script>
         <script src="settings-bundled.js"></script>
     </body>
 </html>

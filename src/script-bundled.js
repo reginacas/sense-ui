@@ -1738,6 +1738,16 @@ async function handleProjectChange() {
 }
 
 function announce(msg) {
+    const status = document.getElementById('chat-status');
+    if (status) {
+        status.textContent = msg;
+        status.classList.remove('visually-hidden');
+        setTimeout(() => {
+            status.textContent = '';
+            status.classList.add('visually-hidden');
+        }, 3000);
+    }
+
     const live = document.createElement('div');
     live.setAttribute('role', 'status');
     live.setAttribute('aria-live', 'polite');
@@ -2023,6 +2033,38 @@ function setupEventListeners() {
     if (downloadButton) {
         downloadButton.addEventListener('click', downloadChatHistory);
     }
+
+    // Export chat as JSON button
+    const exportJsonButton = document.getElementById('export-chat-json');
+    if (exportJsonButton) {
+        exportJsonButton.addEventListener('click', exportChatAsJson);
+    }
+
+    // Import chat button and dialog events
+    const importChatButton = document.getElementById('import-chat-btn');
+    if (importChatButton) {
+        importChatButton.addEventListener('click', openImportChatDialog);
+    }
+
+    const confirmImportChatBtn = document.getElementById('confirm-import-chat');
+    if (confirmImportChatBtn) {
+        confirmImportChatBtn.addEventListener('click', confirmImportChatMode);
+    }
+
+    const cancelImportChatBtn = document.getElementById('cancel-import-chat');
+    if (cancelImportChatBtn) {
+        cancelImportChatBtn.addEventListener('click', closeImportChatDialog);
+    }
+
+    const importChatInput = document.getElementById('import-chat-input');
+    if (importChatInput) {
+        importChatInput.addEventListener('change', handleChatImportFileChange);
+    }
+
+    const importChatDialog = document.getElementById('import-chat-dialog');
+    if (importChatDialog) {
+        importChatDialog.addEventListener('cancel', closeImportChatDialog);
+    }
 }
 
 async function downloadChatHistory() {
@@ -2139,6 +2181,215 @@ async function downloadChatHistory() {
     URL.revokeObjectURL(url);
 
     announce('Chat history downloaded as HTML');
+}
+
+let pendingChatImportMode = 'replace';
+
+function closeImportChatDialog() {
+    const dialog = document.getElementById('import-chat-dialog');
+    if (dialog && dialog.open) {
+        dialog.close();
+    }
+}
+
+function openImportChatDialog() {
+    if (!chatMessages || !chatMessages.innerHTML.trim()) {
+        pendingChatImportMode = 'replace';
+        const importInput = document.getElementById('import-chat-input');
+        if (importInput) {
+            importInput.value = '';
+            importInput.click();
+        }
+        return;
+    }
+
+    const dialog = document.getElementById('import-chat-dialog');
+    const dialogText = document.getElementById('import-chat-dialog-text');
+    if (!dialog || !dialogText) {
+        announce('Unable to open import dialog.');
+        return;
+    }
+
+    dialog.showModal();
+    setTimeout(() => dialogText.focus(), 100);
+}
+
+function confirmImportChatMode() {
+    const selectedMode = document.querySelector(
+        'input[name="import-chat-mode"]:checked',
+    );
+    pendingChatImportMode =
+        selectedMode?.value === 'append' ? 'append' : 'replace';
+
+    closeImportChatDialog();
+
+    const importInput = document.getElementById('import-chat-input');
+    if (!importInput) {
+        announce('Import input is unavailable.');
+        return;
+    }
+    importInput.value = '';
+    importInput.click();
+}
+
+async function exportChatAsJson() {
+    if (!chatMessages || !chatMessages.innerHTML.trim()) {
+        announce('No chat history to export');
+        return;
+    }
+
+    announce('Preparing JSON export...');
+
+    try {
+        const [activeTab] = await chrome.tabs.query({
+            active: true,
+            currentWindow: true,
+        });
+        const pageUrl =
+            sessionLatestScreenshotUrl ||
+            sessionFirstScreenshotUrl ||
+            activeTab?.url ||
+            'Unknown page';
+        const pageTitle =
+            sessionLatestScreenshotTitle ||
+            sessionFirstScreenshotTitle ||
+            activeTab?.title ||
+            'Unknown title';
+
+        const activeProject = await getActiveProject();
+        const messages = extractStructuredMessages(chatMessages);
+
+        const exportPayload = formatChatExport({
+            page: {
+                title: pageTitle,
+                url: pageUrl,
+            },
+            project: activeProject,
+            chatHistory: chatMessages.innerHTML,
+            messages,
+            screenshots: {
+                before: sessionFirstScreenshot || null,
+                beforeUrl: sessionFirstScreenshotUrl || null,
+                beforeTitle: sessionFirstScreenshotTitle || null,
+                after: sessionLatestScreenshot || null,
+                afterUrl: sessionLatestScreenshotUrl || null,
+                afterTitle: sessionLatestScreenshotTitle || null,
+            },
+        });
+
+        const jsonString = JSON.stringify(exportPayload, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `senseui-chat-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        announce('Chat history exported as JSON');
+    } catch (error) {
+        console.error('Error exporting chat as JSON:', error);
+        announce(`Failed to export chat: ${error.message}`);
+    }
+}
+
+async function handleChatImportFileChange(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        let parsed = null;
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            announce('Error importing chat: Invalid JSON file.');
+            return;
+        }
+
+        const importData = validateAndExtractImportData(parsed);
+        if (
+            !importData.isValid ||
+            (!importData.hasChat && !importData.chatHistory)
+        ) {
+            announce(
+                'Invalid file format. No chat data found in the selected file.',
+            );
+            return;
+        }
+
+        const importedHtml = importData.chatHistory;
+
+        if (pendingChatImportMode === 'append') {
+            chatMessages.innerHTML += importedHtml;
+            announce('Chat history imported and appended to current chat.');
+        } else {
+            chatMessages.innerHTML = importedHtml;
+            announce('Chat history imported and replaced current chat.');
+        }
+
+        // Re-attach event listeners to restored messages
+        attachResponseActions(chatMessages);
+
+        // Restore screenshot session state if available
+        if (importData.screenshots) {
+            const sc = importData.screenshots;
+            if (sc.before) sessionFirstScreenshot = sc.before;
+            if (sc.beforeUrl) sessionFirstScreenshotUrl = sc.beforeUrl;
+            if (sc.beforeTitle) sessionFirstScreenshotTitle = sc.beforeTitle;
+            if (sc.after) sessionLatestScreenshot = sc.after;
+            if (sc.afterUrl) sessionLatestScreenshotUrl = sc.afterUrl;
+            if (sc.afterTitle) sessionLatestScreenshotTitle = sc.afterTitle;
+        }
+
+        // Import and associate project if available
+        if (importData.activeProject) {
+            const existingProjects = await getAllProjects();
+            const existing = existingProjects.find(
+                (p) =>
+                    p.name.trim().toLowerCase() ===
+                    importData.activeProject.name.trim().toLowerCase(),
+            );
+            if (!existing) {
+                const newProject = normalizeProject(importData.activeProject);
+                if (newProject) {
+                    existingProjects.push(newProject);
+                    await chrome.storage.local.set({
+                        [CONFIG.STORAGE_KEYS.PROJECTS]: existingProjects,
+                    });
+                    await setActiveProject(newProject);
+                    await loadProjectsDropdown();
+                }
+            } else {
+                await setActiveProject(existing);
+                if (projectSelect) {
+                    projectSelect.value = existing.id;
+                }
+            }
+        } else if (importData.projects && importData.projects.length > 0) {
+            const existingProjects = await getAllProjects();
+            const merged = mergeProjects(existingProjects, importData.projects);
+            await chrome.storage.local.set({
+                [CONFIG.STORAGE_KEYS.PROJECTS]: merged,
+            });
+            await loadProjectsDropdown();
+        }
+
+        // Save imported chat to storage
+        await saveChatHistory();
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    } catch (error) {
+        console.error('Error importing chat:', error);
+        announce(`Error importing chat: ${error.message}. Please try again.`);
+    } finally {
+        const importInput = document.getElementById('import-chat-input');
+        if (importInput) {
+            importInput.value = '';
+        }
+        pendingChatImportMode = 'replace';
+    }
 }
 
 document.addEventListener(
